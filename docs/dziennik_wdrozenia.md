@@ -102,6 +102,12 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 |------|------|
 | `scripts/deploy-minikube.sh` | Skrypt automatyzujący uruchomienie Minikube, konfigurację dodatków, lokalne budowanie obrazu API i instalację manifestów. |
 
+### Konfiguracja CI/CD (`.github/workflows/`)
+| Plik | Opis |
+|------|------|
+| `.github/workflows/ci.yml` | Potok Continuous Integration: automatyczne formatowanie kodu (black), statyczna analiza (flake8), testy jednostkowe (pytest) i test budowania obrazów Docker. |
+| `.github/workflows/cd.yml` | Potok Continuous Deployment: automatyczne budowanie i wypychanie gotowych obrazów Docker do rejestru GitHub Container Registry (GHCR). |
+
 ---
 
 ## Chronologia kroków wdrożenia
@@ -214,10 +220,17 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 
 ---
 
+### Krok 11 — CI/CD Pipeline z GitHub Actions (Faza 5)
+**Co:** Skonfigurowano dwa potoki CI/CD za pomocą GitHub Actions:
+- **Continuous Integration (`ci.yml`)**: uruchamiany przy każdym wypchnięciu (push) oraz żądaniu ściągnięcia (pull request) do gałęzi `main`. Odpowiada za sprawdzenie formatowania (`black`), statyczną analizę kodu (`flake8`), uruchomienie testów jednostkowych (`pytest`) z raportem pokrycia kodu oraz weryfikację budowania obrazów Docker dla API i Nginxa.
+- **Continuous Deployment (`cd.yml`)**: uruchamiany automatycznie po udanym scaleniu zmian z gałęzią `main`. Buduje produkcyjne wersje obrazów Docker i automatycznie wypycha je do rejestru pakietów GitHub Container Registry (GHCR), tagując je unikalnym ID commita oraz etykietą `latest`.
+
+**Dlaczego:** Automatyzacja testów i budowania obrazów to klucz do wykrywania błędów na wczesnym etapie (shift-left testing). Wypychanie gotowych obrazów do GHCR pozwala na natychmiastowe pobranie ich przez klaster Kubernetes na środowiskach docelowych, bez konieczności lokalnego budowania kodu.
+**Rezultat:** W pełni zautomatyzowane pipeline'y CI/CD zintegrowane z repozytorium GitHub.
+
+---
+
 ## Następne kroki (planowane)
 
-### Krok 11 — CI/CD Pipeline (Faza 5)
-Konfiguracja potoku GitHub Actions: automatyczne sprawdzanie kodu (lint: flake8, black), uruchamianie testów jednostkowych (pytest), budowanie obrazów Docker i wypychanie ich do rejestru (Docker Hub / GitHub Packages).
-
 ### Krok 12 — Monitoring + Dokumentacja końcowa (Faza 6)
-Integracja Prometheus + Grafana do monitorowania parametrów klastra i aplikacji, opracowanie instrukcji wdrożenia w chmurach publicznych (AWS/Azure/GCP) wraz z analizą kosztów.
+Integracja Prometheus + Grafana do monitorowania parametrów klastra i aplikacji (CPU, RAM, zapytania API, cache hits/misses), opracowanie instrukcji wdrożenia w chmurach publicznych (AWS/Azure/GCP) wraz z analizą kosztów.
