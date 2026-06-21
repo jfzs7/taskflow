@@ -9,13 +9,25 @@ kind: Ingress
 metadata:
   name: taskflow-ingress
   namespace: taskflow
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: / # Przekierowanie ruchu na główny katalog
 spec:
   rules:
     - host: taskflow.local # Mapowanie ruchu kierowanego na domenę taskflow.local
       http:
         paths:
+          - path: /prometheus
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus-svc
+                port:
+                  number: 9090
+          - path: /grafana
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana-svc
+                port:
+                  number: 3000
           - path: /
             pathType: Prefix
             backend:

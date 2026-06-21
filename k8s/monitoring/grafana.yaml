@@ -49,6 +49,10 @@ spec:
               value: "true" # Zezwolenie na anonimowe logowanie w celach prezentacji
             - name: GF_AUTH_ANONYMOUS_ORG_ROLE
               value: "Admin"
+            - name: GF_SERVER_ROOT_URL
+              value: "http://taskflow.local/grafana/"
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
           volumeMounts:
             - name: datasource-volume
               mountPath: /etc/grafana/provisioning/datasources/datasource.yaml

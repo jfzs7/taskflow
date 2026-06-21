@@ -39,18 +39,31 @@ Aplikację można uruchomić na dwa sposoby: lokalnie za pomocą **Docker Compos
     make docker-down  # lub: docker-compose down
     ```
 
-### Metoda B: Uruchomienie w klastrze Kubernetes (Minikube)
-1.  Upewnij się, że aplikacja Docker Desktop jest włączona.
+### Metoda B: Uruchomienie w klastrze Kubernetes (Minikube) z Ingress
+1.  Upewnij się, że aplikacja Docker Desktop/Daemon jest włączona.
 2.  Uruchom skrypt automatycznego wdrożenia:
     ```bash
     ./scripts/deploy-minikube.sh
     ```
-3.  Po zakończeniu budowania skrypt wyświetli wewnętrzny adres IP Minikube i port, pod którym aplikacja jest dostępna (np. `http://192.168.49.2:30080`).
-4.  **Dla macOS**: Z powodu ograniczeń sieciowych systemu macOS, aby otworzyć aplikację w przeglądarce, wykonaj w osobnym terminalu polecenie:
-    ```bash
-    minikube service nginx-svc -n taskflow
-    ```
-    Tunel otworzy aplikację automatycznie w domyślnej przeglądarce (np. pod adresem `http://127.0.0.1:55801`).
+3.  Po wdrożeniu, w celu udostępnienia aplikacji pod wspólną domeną `taskflow.local`, należy skonfigurować tunel oraz wpis hosts:
+    *   **Pobierz IP klastra Minikube**:
+        ```bash
+        minikube ip
+        ```
+    *   **Dodaj mapowanie domeny** w pliku `/etc/hosts` (wymaga uprawnień administratora):
+        ```text
+        <IP_MINIKUBE> taskflow.local
+        ```
+        (gdzie `<IP_MINIKUBE>` to IP uzyskane z poprzedniego polecenia, np. `192.168.49.2`).
+    *   **Uruchom tunel Ingress** w osobnym terminalu (będzie działać w tle):
+        ```bash
+        minikube tunnel
+        ```
+4.  **Adresy dostępowe w przeglądarce**:
+    *   **Aplikacja WWW & REST API**: [http://taskflow.local](http://taskflow.local)
+    *   **Dokumentacja interaktywna API**: [http://taskflow.local/docs](http://taskflow.local/docs)
+    *   **Serwer Prometheus**: [http://taskflow.local/prometheus](http://taskflow.local/prometheus)
+    *   **Panel Grafana**: [http://taskflow.local/grafana](http://taskflow.local/grafana) (użytkownik: `admin` / hasło: `admin` lub logowanie anonimowe)
 
 ---
 

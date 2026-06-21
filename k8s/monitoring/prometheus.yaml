@@ -44,6 +44,11 @@ spec:
           ports:
             - containerPort: 9090
               name: webport
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--web.external-url=http://taskflow.local/prometheus"
+            - "--web.route-prefix=/prometheus"
           volumeMounts:
             - name: config-volume
               mountPath: /etc/prometheus/prometheus.yml

@@ -239,13 +239,16 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 
 ---
 
-### Krok 12 — Monitoring i dokumentacja końcowa (Faza 6)
-**Co:** Zaimplementowano monitorowanie w czasie rzeczywistym oraz ukończono analizę chmurową:
-- Wdrożono serwer Prometheus (`k8s/monitoring/prometheus.yaml`) zbierający metryki z API.
-- Wdrożono panel Grafana (`k8s/monitoring/grafana.yaml`) z automatycznie podpiętym źródłem danych Prometheus.
+### Krok 12 — Monitoring, routing Ingress i dokumentacja końcowa (Faza 6)
+**Co:** Zaimplementowano monitorowanie w czasie rzeczywistym, routing subpath przez Ingress oraz ukończono analizę chmurową:
+- Wdrożono serwer Prometheus (`k8s/monitoring/prometheus.yaml`) zbierający metryki z API, skonfigurowany pod ścieżką `/prometheus`.
+- Wdrożono panel Grafana (`k8s/monitoring/grafana.yaml`) z automatycznie podpiętym źródłem danych Prometheus, skonfigurowany pod ścieżką `/grafana`.
+- Zaktualizowano Ingress (`k8s/ingress.yaml`) w celu zintegrowania routingu pod domeną `taskflow.local` na jednym adresie IP i porcie 80 z podziałem na podkatalogi:
+  - `http://taskflow.local/` -> Nginx proxy / Aplikacja frontend i API
+  - `http://taskflow.local/prometheus` -> Panel Prometheus
+  - `http://taskflow.local/grafana` -> Panel Grafana
 - Dodano pliki dokumentacji teoretycznej i chmurowej: `docs/devops-overview.md` (metodyka DevOps i model CALMS), `docs/cloud-comparison.md` (porównanie AWS vs Azure vs GCP) oraz `docs/cost-analysis.md` (analiza kosztów chmurowych i optymalizacji FinOps).
 - Utworzono scenariusz demonstracji działania aplikacji dla celów prezentacyjnych (`docs/prezentacja_dzialania.md`).
 
-**Dlaczego:** Obserwowalność (Observability) i ciągłe doskonalenie na bazie zebranych danych to końcowe etapy pętli DevOps. Prometheus pozwala na zbieranie dokładnych parametrów działania klastra, a Grafana dostarcza przyjazne pulpity menedżerskie. Teoretyczne dokumenty chmurowe i FinOps spajają wdrożoną aplikację z zakresem i celem pracy magisterskiej.
-**Rezultat:** Projekt TaskFlow jest w pełni ukończony, wdrożony i gotowy do oceny.
-
+**Dlaczego:** Obserwowalność (Observability) i ciągłe doskonalenie na bazie zebranych danych to końcowe etapy pętli DevOps. Wystawienie wszystkich usług monitoringu i samej aplikacji pod jedną domeną `taskflow.local` i różnymi podkatalogami odzwierciedla profesjonalną konfigurację produkcyjną (unikanie otwierania wielu losowych portów NodePort i ujednolicenie punktów dostępu). Prometheus pozwala na zbieranie dokładnych parametrów działania klastra, a Grafana dostarcza przyjazne pulpity menedżerskie. Teoretyczne dokumenty chmurowe i FinOps spajają wdrożoną aplikację z zakresem i celem pracy magisterskiej.
+**Rezultat:** Projekt TaskFlow jest w pełni ukończony, wdrożony pod jedną wspólną domeną `taskflow.local` za pomocą Ingressa i gotowy do oceny.

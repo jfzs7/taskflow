@@ -78,33 +78,35 @@ Pokazanie funkcjonalności samej aplikacji.
 *   **Działanie**: Otwórz w przeglądarce adres `http://localhost`. Dodaj nowe zadanie za pomocą formularza, przeciągnij je (drag-and-drop) do kolumny "W toku", a następnie usuń jedno z zadań klikając w ikonę kosza.
 *   **Omawiane zagadnienie**: Wyjaśnienie, że każda akcja użytkownika wywołuje asynchroniczne żądanie API. Przeniesienie zadania aktualizuje rekord w bazie danych SQL oraz natychmiastowo unieważnia klucze w cache Redis (wzorzec Cache-Aside), zapewniając brak rozbieżności w danych.
 
-### Krok 4: Wdrożenie aplikacji w klastrze Kubernetes
+### Krok 4: Wdrożenie aplikacji w klastrze Kubernetes i konfiguracja Ingress
 Pokazanie działania systemu w środowisku klastrowym (Minikube).
 *   **Działanie**: Zatrzymaj kontenery lokalne (`make docker-down`), a następnie uruchom skrypt wdrożenia klastra:
     ```bash
     ./scripts/deploy-minikube.sh
     ```
-    W nowym oknie terminala otwórz tunel dostępowy do serwisu:
-    ```bash
-    minikube service nginx-svc -n taskflow
-    ```
-*   **Omawiane zagadnienie**: Wyjaśnienie, że skrypt automatycznie buduje obraz lokalnie w rejestrze Minikube, konfiguruje przestrzeń nazw, limity zasobów, trwałe woluminy dla baz danych (StatefulSets) oraz 2 repliki aplikacji API w celu zapewnienia bezprzerwowego działania w przypadku awarii jednego z kontenerów.
+    W celu obsługi domeny `taskflow.local` wraz z jej podkatalogami (Ingress), skonfiguruj tunel dostępowy:
+    1.  Dodaj wpis do pliku `/etc/hosts` wskazujący na adres IP Minikube (np. `192.168.49.2 taskflow.local`). Adres IP Minikube uzyskasz poleceniem `minikube ip`.
+    2.  Uruchom proces tunelujący w osobnym oknie terminala:
+        ```bash
+        minikube tunnel
+        ```
+*   **Omawiane zagadnienie**: Wyjaśnienie, że skrypt automatycznie buduje obraz lokalnie w rejestrze Minikube, konfiguruje przestrzeń nazw, limity zasobów, trwałe woluminy dla baz danych (StatefulSets), 2 repliki aplikacji API oraz routing Ingress. Dzięki temu cała infrastruktura jest dostępna pod jedną, wspólną domeną `taskflow.local`.
 
 ### Krok 5: Prezentacja metryk i monitoringu (Prometheus + Grafana)
 Pokazanie mechanizmów obserwowania systemu w czasie rzeczywistym.
 *   **Działanie**:
-    1.  Pokaż surowy endpoint `/prometheus` wygenerowany przez aplikację.
-    2.  Otwórz panel serwera Prometheus, wpisując w nowym terminalu:
-        ```bash
-        minikube service prometheus-svc -n taskflow
+    1.  Pokaż surowy endpoint `/prometheus` wygenerowany przez aplikację (np. `http://taskflow.local/prometheus` lub bezpośrednio z API `/prometheus`).
+    2.  Otwórz panel serwera Prometheus pod adresem:
         ```
-        (Można tam wpisać zapytanie `taskflow_requests_total` lub `taskflow_tasks_total` w zakładce Graph i zobaczyć wykres).
-    3.  Otwórz graficzny panel Grafana:
-        ```bash
-        minikube service grafana-svc -n taskflow
+        http://taskflow.local/prometheus
         ```
-        (Logowanie: `admin` / `admin`. Wyszukaj dodane automatycznie źródło danych Prometheus).
-*   **Omawiane zagadnienie**: Wyjaśnienie, że aplikacja na bieżąco rejestruje ruch sieciowy i stan zadań, a serwer Prometheus zbiera te dane w klastrze. Grafana pozwala na tworzenie zaawansowanych pulpitów managerskich (Dashboards) do wizualizacji tych parametrów w czasie rzeczywistym.
+        (W zakładce Graph można wpisać zapytanie `taskflow_requests_total` lub `taskflow_tasks_total` i kliknąć "Execute" w celu wizualizacji zebranych metryk).
+    3.  Otwórz graficzny panel Grafana pod adresem:
+        ```
+        http://taskflow.local/grafana
+        ```
+        (Logowanie automatyczne bez hasła lub za pomocą konta administratora `admin` / `admin`. Źródło danych Prometheus jest już w pełni skonfigurowane automatycznie).
+*   **Omawiane zagadnienie**: Wyjaśnienie, że aplikacja na bieżąco rejestruje ruch sieciowy i stan zadań, a serwer Prometheus zbiera te dane w klastrze. Grafana pozwala na tworzenie zaawansowanych pulpitów managerskich (Dashboards) do wizualizacji tych parametrów w czasie rzeczywistym. Wszystkie narzędzia są zintegrowane w ramach jednego adresu IP i portu dzięki Ingressowi.
 
 
 ### Krok 6: Pokazanie automatyzacji CI/CD na GitHubie
