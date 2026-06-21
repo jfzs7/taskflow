@@ -47,7 +47,8 @@ Główne katalogi i pliki w repozytorium:
 Dokumentację systemu sporządzono w formacie Markdown (pliki `.md`), co umożliwia bezpośredni podgląd w repozytorium GitHub. Zlokalizowana jest w folderze `docs/`:
 1.  [dokumentacja_techniczna.md](file:///Users/jakubfrancuz/Library/CloudStorage/GoogleDrive-jakub.francuz7@gmail.com/Mój dysk/praca_magisterska/docs/dokumentacja_techniczna.md) — specyfikacja techniczna (architektura, baza danych, opis API).
 2.  [dokumentacja_uzytkowa.md](file:///Users/jakubfrancuz/Library/CloudStorage/GoogleDrive-jakub.francuz7@gmail.com/Mój dysk/praca_magisterska/docs/dokumentacja_uzytkowa.md) — podręcznik instalacji i obsługi aplikacji.
-3.  [dziennik_wdrozenia.md](file:///Users/jakubfrancuz/Library/CloudStorage/GoogleDrive-jakub.francuz7@gmail.com/Mój dysk/praca_magisterska/docs/dziennik_wdrozenia.md) — chronologiczny zapis prac wraz ze spisem wszystkich utworzonych plików.
+3.  [scenariusze_monitoringu.md](file:///Users/jakubfrancuz/Library/CloudStorage/GoogleDrive-jakub.francuz7@gmail.com/Mój dysk/praca_magisterska/docs/scenariusze_monitoringu.md) — scenariusze prezentacji monitoringu i metryk (Prometheus + Grafana).
+4.  [dziennik_wdrozenia.md](file:///Users/jakubfrancuz/Library/CloudStorage/GoogleDrive-jakub.francuz7@gmail.com/Mój dysk/praca_magisterska/docs/dziennik_wdrozenia.md) — chronologiczny zapis prac wraz ze spisem wszystkich utworzonych plików.
 
 ---
 
