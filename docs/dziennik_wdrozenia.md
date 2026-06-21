@@ -77,6 +77,31 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 | `docs/deployment-local.md` | Instrukcja wdrożenia lokalnego (Docker Compose). Krok po kroku: instalacja Dockera, uruchomienie, weryfikacja, polecenia cURL i rozwiązywanie problemów. |
 | `docs/dziennik_wdrozenia.md` | Ten plik — dziennik wdrożenia i spis plików. |
 
+### Manifesty Kubernetes (`k8s/`)
+| Plik | Opis |
+|------|------|
+| `k8s/namespace.yaml` | Definicja dedykowanej przestrzeni nazw `taskflow` dla logicznej izolacji zasobów w klastrze. |
+| `k8s/configmap.yaml` | Globalne, nie-czułe dane konfiguracyjne aplikacji (nazwy hostów bazy/cache, porty, zmienne środowiskowe). |
+| `k8s/secrets.yaml` | Wrażliwe dane uwierzytelniające (nazwa użytkownika i hasło PostgreSQL) zakodowane w formacie Base64. |
+| `k8s/postgres/pvc.yaml` | Żądanie trwałego woluminu (PersistentVolumeClaim) o rozmiarze 5Gi do przechowywania danych PostgreSQL. |
+| `k8s/postgres/service.yaml` | Serwis bezadresowy (headless service) do wewnętrznej komunikacji i rozróżniania instancji bazy danych. |
+| `k8s/postgres/statefulset.yaml` | Definicja bazy danych PostgreSQL jako StatefulSet gwarantująca stałe identyfikatory sieciowe i przechowywanie danych. |
+| `k8s/redis/pvc.yaml` | Żądanie trwałego woluminu o rozmiarze 1Gi dla pamięci podręcznej Redis. |
+| `k8s/redis/service.yaml` | Serwis bezadresowy (headless service) dla wewnętrznej komunikacji z pamięcią podręczną Redis. |
+| `k8s/redis/statefulset.yaml` | Definicja Redis jako StatefulSet z podpiętym trwałym woluminem danych. |
+| `k8s/api/deployment.yaml` | Skalowane wdrożenie (Deployment) backendu FastAPI oparte o 2 repliki, z wstrzykiwaniem zmiennych z ConfigMap/Secrets i sondami HTTP. |
+| `k8s/api/service.yaml` | Wewnętrzny serwis ClusterIP dystrybuujący ruch pomiędzy replikami backendu. |
+| `k8s/api/hpa.yaml` | Automatyczne skalowanie horyzontalne (Horizontal Pod Autoscaler) dla kontenerów API na bazie zużycia CPU. |
+| `k8s/nginx/configmap.yaml` | Plik konfiguracyjny serwera Nginx z poprawną nazwą hosta serwisu API w klastrze Kubernetes. |
+| `k8s/nginx/deployment.yaml` | Wdrożenie serwera Nginx z zamontowanym plikiem konfiguracyjnym z ConfigMap. |
+| `k8s/nginx/service.yaml` | Serwis zewnętrzny typu NodePort umożliwiający dostęp do serwera Nginx z hosta deweloperskiego. |
+| `k8s/ingress.yaml` | Definicja routingu i dostępu HTTP opartego na nazwie domeny `taskflow.local` dla klastra Kubernetes. |
+
+### Zaktualizowane skrypty pomocnicze (`scripts/`)
+| Plik | Opis |
+|------|------|
+| `scripts/deploy-minikube.sh` | Skrypt automatyzujący uruchomienie Minikube, konfigurację dodatków, lokalne budowanie obrazu API i instalację manifestów. |
+
 ---
 
 ## Chronologia kroków wdrożenia
@@ -174,13 +199,25 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 
 ---
 
+### Krok 10 — Manifesty Kubernetes i Minikube (Faza 4)
+**Co:** Utworzono konfiguracje Kubernetes dla wszystkich komponentów aplikacji:
+- Dedykowaną przestrzeń nazw (`namespace.yaml`)
+- Konfiguracje i sekrety (`configmap.yaml`, `secrets.yaml`)
+- Zasoby bazodanowe i cache (StatefulSet, Service, PVC dla PostgreSQL i Redis)
+- Skalowany serwer API (Deployment z 2 replikami, Service typu ClusterIP oraz HPA)
+- Serwer Nginx proxy (Deployment, Service typu NodePort, ConfigMap)
+- Routing wejściowy Ingress (`ingress.yaml`)
+- Skrypt wdrożeniowy `scripts/deploy-minikube.sh` i zaktualizowano skrypt czyszczący `scripts/cleanup.sh`.
+
+**Dlaczego:** Kubernetes jest standardem orkiestracji kontenerów. Użycie StatefulSets gwarantuje zachowanie danych i stabilną tożsamość sieciową dla baz danych, natomiast Deployment z HPA zapewnia elastyczność i skalowalność warstwy API. Skrypt automatyzuje budowanie lokalnego obrazu i instalację zasobów, minimalizując ryzyko błędów manualnych.
+**Rezultat:** Aplikacja w pełni przygotowana do wdrożenia w lokalnym klastrze Minikube.
+
+---
+
 ## Następne kroki (planowane)
 
-### Krok 10 — Kubernetes (Faza 4)
-Przygotowanie manifestów YAML (Deployment, StatefulSet, Service, Ingress, ConfigMap, Secrets, PVC, HPA) oraz skryptu wdrożenia na Minikube.
-
 ### Krok 11 — CI/CD Pipeline (Faza 5)
-Konfiguracja GitHub Actions: lint (flake8, black) → testy (pytest) → build Docker → push do registry → deploy na Kubernetes.
+Konfiguracja potoku GitHub Actions: automatyczne sprawdzanie kodu (lint: flake8, black), uruchamianie testów jednostkowych (pytest), budowanie obrazów Docker i wypychanie ich do rejestru (Docker Hub / GitHub Packages).
 
 ### Krok 12 — Monitoring + Dokumentacja końcowa (Faza 6)
-Integracja Prometheus + Grafana, dokumentacja wdrożenia chmurowego (AWS/Azure/GCP), porównanie platform i analiza kosztów.
+Integracja Prometheus + Grafana do monitorowania parametrów klastra i aplikacji, opracowanie instrukcji wdrożenia w chmurach publicznych (AWS/Azure/GCP) wraz z analizą kosztów.
