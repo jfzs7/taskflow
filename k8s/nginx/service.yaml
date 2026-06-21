@@ -1,3 +1,9 @@
+# =======================================================
+# service.yaml - Serwis sieciowy Nginx wystawiający aplikację
+#
+# Serwis typu NodePort. Pozwala na bezpośredni dostęp do aplikacji
+# z systemu operacyjnego hosta za pomocą portu 30080.
+# =======================================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,9 +11,10 @@ metadata:
   namespace: taskflow
 spec:
   ports:
-    - port: 80
-      targetPort: 80
-      nodePort: 30080
+    - port: 80         # Port wewnętrzny usługi
+      targetPort: 80   # Port docelowy w podzie Nginx
+      nodePort: 30080  # Sztywny port zewnętrzny wystawiony na maszynie węzła
   selector:
     app: nginx
-  type: NodePort
+  type: NodePort       # NodePort umożliwia łatwy dostęp deweloperski
+

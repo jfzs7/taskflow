@@ -1,3 +1,9 @@
+# =======================================================
+# deployment.yaml - Wdrożenie serwera Nginx w klastrze
+#
+# Serwer Nginx działa jako punkt wejścia i reverse proxy
+# przekazując ruch do serwisu API (FastAPI).
+# =======================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +12,7 @@ metadata:
   labels:
     app: nginx
 spec:
-  replicas: 1
+  replicas: 1              # Wystarczy jedna instancja proxy dla środowiska deweloperskiego
   selector:
     matchLabels:
       app: nginx
@@ -17,34 +23,40 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:alpine
+          image: nginx:alpine # Bardzo lekki oficjalny obraz serwera Nginx
           ports:
             - containerPort: 80
               name: httpport
           resources:
+            # Minimalne zapotrzebowanie na zasoby (Nginx jest wysoce optymalny)
             limits:
-              cpu: "200m"
-              memory: "128Mi"
+              cpu: "200m"     # Limit: 0.2 rdzenia
+              memory: "128Mi" # Limit: 128 Megabajtów RAM
             requests:
-              cpu: "100m"
-              memory: "64Mi"
+              cpu: "100m"     # Gwarantowane: 0.1 rdzenia
+              memory: "64Mi"  # Gwarantowane: 64 Megabajty RAM
           volumeMounts:
+            # Nadpisanie domyślnego pliku konfiguracyjnego Nginxa własnym plikiem z ConfigMapy
             - name: nginx-config-volume
               mountPath: /etc/nginx/conf.d/default.conf
               subPath: nginx.conf
           livenessProbe:
+            # Sprawdzenie aktywności serwera Nginx przez endpoint `/nginx-health`
             httpGet:
               path: /nginx-health
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
+            # Sonda gotowości
             httpGet:
               path: /nginx-health
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
+        # Deklaracja wolumenu pobierającego plik z ConfigMapy
         - name: nginx-config-volume
           configMap:
             name: nginx-config
+

@@ -1,3 +1,8 @@
+# =======================================================
+# service.yaml - Serwis sieciowy dla bazy danych PostgreSQL
+#
+# Definicja punktu dostępowego wewnątrz klastra (wewnętrzny DNS).
+# =======================================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,8 +10,9 @@ metadata:
   namespace: taskflow
 spec:
   ports:
-    - port: 5432
-      targetPort: 5432
+    - port: 5432       # Port, na którym usługa nasłuchuje w sieci klastra
+      targetPort: 5432 # Port w kontenerze docelowym podu
   selector:
-    app: postgres
-  clusterIP: None # headless service dla StatefulSet
+    app: postgres      # Powiązanie serwisu z podami posiadającymi etykietę app: postgres
+  clusterIP: None      # Serwis typu Headless (brak wirtualnego IP) - wymagany do orkiestracji StatefulSet
+

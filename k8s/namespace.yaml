@@ -1,3 +1,9 @@
+# =======================================================
+# namespace.yaml - Dedykowana przestrzeń nazw (Namespace)
+#
+# Izolacja logiczna zasobów aplikacji TaskFlow w klastrze.
+# Zapobiega konfliktom nazw z innymi aplikacjami.
+# =======================================================
 apiVersion: v1
 kind: Namespace
 metadata:

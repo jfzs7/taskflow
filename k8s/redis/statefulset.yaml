@@ -1,3 +1,9 @@
+# =======================================================
+# statefulset.yaml - Wdrożenie pamięci podręcznej Redis
+#
+# Użycie StatefulSet gwarantuje unikalność instancji cache
+# oraz stałe połączenie z wolumenem danych /data.
+# =======================================================
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -5,7 +11,7 @@ metadata:
   namespace: taskflow
 spec:
   serviceName: redis-svc
-  replicas: 1
+  replicas: 1              # Wdrożenie jednej instancji cache w celu zachowania spójności danych
   selector:
     matchLabels:
       app: redis
@@ -16,28 +22,32 @@ spec:
     spec:
       containers:
         - name: redis
-          image: redis:7-alpine
+          image: redis:7-alpine # Lekka wersja obrazu Redis oparta na Alpine Linux
           ports:
             - containerPort: 6379
               name: redisport
           resources:
+            # Ograniczenia zasobów (zgodne z wymaganiami chmurowymi/wydajnościowymi)
             limits:
-              cpu: "200m"
-              memory: "256Mi"
+              cpu: "200m"     # Maksymalnie 0.2 rdzenia procesora
+              memory: "256Mi" # Maksymalnie 256 Megabajtów pamięci RAM
             requests:
-              cpu: "100m"
-              memory: "128Mi"
+              cpu: "100m"     # Gwarantowane 0.1 rdzenia
+              memory: "128Mi" # Gwarantowane 128 Megabajtów RAM
           volumeMounts:
+            # Montowanie dysku trwałego na dane Redis
             - name: redis-volume
               mountPath: /data
           livenessProbe:
+            # Test aktywności kontenera przy użyciu narzędzia redis-cli
             exec:
               command:
                 - redis-cli
                 - ping
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: 10 # Opóźnienie przed pierwszym sprawdzeniem
+            periodSeconds: 10       # Odstępy sprawdzania
           readinessProbe:
+            # Sonda gotowości sprawdzająca, czy Redis może przetwarzać żądania zapisu/odczytu
             exec:
               command:
                 - redis-cli
@@ -45,6 +55,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
+        # Podpięcie wcześniej zdefiniowanego PersistentVolumeClaim
         - name: redis-volume
           persistentVolumeClaim:
             claimName: redis-data
+

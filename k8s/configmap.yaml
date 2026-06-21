@@ -1,18 +1,29 @@
+# =======================================================
+# configmap.yaml - Globalne zmienne konfiguracyjne klastra
+#
+# Przechowywanie nie-czułych parametrów konfiguracyjnych aplikacji.
+# Zmiany w tym pliku nie wymagają przebudowywania kontenerów.
+# =======================================================
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: taskflow-config
   namespace: taskflow
 data:
+  # Ustawienia ogólne aplikacji
   APP_NAME: "TaskFlow"
   APP_VERSION: "1.0.0"
   APP_ENV: "production"
   APP_DEBUG: "false"
   APP_HOST: "0.0.0.0"
   APP_PORT: "8000"
+  
+  # Konfiguracja połączenia z PostgreSQL (nazwa hosta to nazwa serwisu K8s)
   POSTGRES_HOST: "postgres-svc"
   POSTGRES_PORT: "5432"
   POSTGRES_DB: "taskflow"
+  
+  # Konfiguracja połączenia z Redis (nazwa hosta to nazwa serwisu K8s)
   REDIS_HOST: "redis-svc"
   REDIS_PORT: "6379"
   REDIS_DB: "0"

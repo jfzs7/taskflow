@@ -1,3 +1,9 @@
+# =======================================================
+# pvc.yaml - Trwały wolumin dla bazy danych PostgreSQL
+#
+# Żądanie utworzenia trwałego woluminu (PersistentVolumeClaim)
+# w celu zapewnienia, że dane bazy przetrwają restarty podów.
+# =======================================================
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -5,7 +11,8 @@ metadata:
   namespace: taskflow
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteOnce # Wolumin może być montowany z prawem zapisu przez pojedynczy węzeł klastra
   resources:
     requests:
-      storage: 5Gi
+      storage: 5Gi  # Przypisanie 5 gigabajtów przestrzeni dyskowej na dane SQL
+

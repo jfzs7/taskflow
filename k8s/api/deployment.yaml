@@ -1,3 +1,9 @@
+# =======================================================
+# deployment.yaml - Wdrożenie bezstanowej aplikacji API
+#
+# Wdrożenie (Deployment) dla aplikacji backendowej FastAPI.
+# Obsługuje skalowanie, aktualizacje bez przestojów (Rolling Updates).
+# =======================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +12,7 @@ metadata:
   labels:
     app: api
 spec:
-  replicas: 2
+  replicas: 2              # Dwie repliki w celu zapewnienia wysokiej dostępności (High Availability)
   selector:
     matchLabels:
       app: api
@@ -18,31 +24,36 @@ spec:
       containers:
         - name: api
           image: taskflow-api:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: IfNotPresent # Użyj lokalnego obrazu z rejestru Minikube, jeśli jest dostępny
           ports:
             - containerPort: 8000
               name: apiport
           envFrom:
+            # Wstrzyknięcie wszystkich zmiennych z ConfigMapy i Secrets jako zmienne środowiskowe
             - configMapRef:
                 name: taskflow-config
             - secretRef:
                 name: taskflow-secrets
           resources:
+            # Określenie zużycia zasobów (kluczowe dla poprawnej alokacji w klastrze)
             limits:
-              cpu: "500m"
-              memory: "512Mi"
+              cpu: "500m"     # Limit: 0.5 rdzenia procesora
+              memory: "512Mi" # Limit: 512 Megabajtów pamięci RAM
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: "100m"     # Gwarantowane: 0.1 rdzenia
+              memory: "256Mi" # Gwarantowane: 256 Megabajtów RAM
           livenessProbe:
+            # Sonda żywotności sprawdzająca status HTTP endpointu /health
             httpGet:
               path: /health
               port: 8000
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            initialDelaySeconds: 15 # Opóźnienie przed pierwszym sprawdzeniem (czas na start uvicorna)
+            periodSeconds: 10       # Częstotliwość odpytywania
           readinessProbe:
+            # Sonda gotowości sprawdzająca, czy aplikacja jest połączona z DB/cache i gotowa na ruch
             httpGet:
               path: /health
               port: 8000
             initialDelaySeconds: 10
             periodSeconds: 5
+

@@ -1,19 +1,26 @@
+# =======================================================
+# ingress.yaml - Routing wejściowy (Ingress) klastra
+#
+# Definicja reguł routingu ruchu HTTP opartego na domenie.
+# Umożliwia dostęp do aplikacji przez nazwę hosta 'taskflow.local'.
+# =======================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: taskflow-ingress
   namespace: taskflow
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: / # Przekierowanie ruchu na główny katalog
 spec:
   rules:
-    - host: taskflow.local
+    - host: taskflow.local # Mapowanie ruchu kierowanego na domenę taskflow.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: nginx-svc
+                name: nginx-svc # Kierowanie ruchu do serwisu Nginx
                 port:
                   number: 80
+

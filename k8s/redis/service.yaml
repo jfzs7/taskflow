@@ -1,3 +1,8 @@
+# =======================================================
+# service.yaml - Serwis sieciowy dla pamięci podręcznej Redis
+#
+# Definicja punktu dostępowego wewnątrz klastra dla Redis.
+# =======================================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,8 +10,9 @@ metadata:
   namespace: taskflow
 spec:
   ports:
-    - port: 6379
-      targetPort: 6379
+    - port: 6379       # Port sieciowy serwisu wewnątrz klastra
+      targetPort: 6379 # Port, na którym nasłuchuje Redis w podzie
   selector:
-    app: redis
-  clusterIP: None # headless service dla StatefulSet
+    app: redis         # Przekazywanie żądań do podów z etykietą app: redis
+  clusterIP: None      # Headless Service (brak wirtualnego IP) - wymagany dla StatefulSet
+

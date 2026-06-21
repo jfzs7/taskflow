@@ -1,11 +1,17 @@
+# =======================================================
+# statefulset.yaml - Wdrożenie bazodanowe PostgreSQL
+#
+# StatefulSet zapewnia stabilne identyfikatory podów i trwałość
+# połączenia z wolumenem danych, co jest krytyczne dla baz danych.
+# =======================================================
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres
   namespace: taskflow
 spec:
-  serviceName: postgres-svc
-  replicas: 1
+  serviceName: postgres-svc # Nazwa usługi sieciowej powiązanej ze StatefulSet
+  replicas: 1              # Dokładnie jedna replika bazy (uniknięcie konfliktów zapisu)
   selector:
     matchLabels:
       app: postgres
@@ -16,38 +22,44 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:16-alpine
+          image: postgres:16-alpine # Lekki, oficjalny obraz oparty na Alpine Linux
           ports:
             - containerPort: 5432
               name: dbport
           env:
+            # Pobieranie nazwy bazy danych z ConfigMapy
             - name: POSTGRES_DB
               valueFrom:
                 configMapKeyRef:
                   name: taskflow-config
                   key: POSTGRES_DB
+            # Bezpieczne pobieranie loginu z Secrets
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
                   name: taskflow-secrets
                   key: POSTGRES_USER
+            # Bezpieczne pobieranie hasła z Secrets
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: taskflow-secrets
                   key: POSTGRES_PASSWORD
           resources:
+            # Narzucenie twardych limitów zasobów systemowych dla poda
             limits:
-              cpu: "500m"
-              memory: "512Mi"
+              cpu: "500m"     # Maksymalnie 0.5 rdzenia procesora
+              memory: "512Mi" # Maksymalnie 512 Megabajtów RAMu
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: "100m"     # Gwarantowany minimalny przydział procesora
+              memory: "256Mi" # Gwarantowany minimalny przydział RAMu
           volumeMounts:
+            # Montowanie wolumenu wewnątrz kontenera
             - name: postgres-volume
               mountPath: /var/lib/postgresql/data
-              subPath: postgres
+              subPath: postgres # Podkatalog wewnątrz wolumenu
           livenessProbe:
+            # Sonda żywotności sprawdzająca, czy proces bazy działa poprawnie
             exec:
               command:
                 - pg_isready
@@ -55,9 +67,10 @@ spec:
                 - "$(POSTGRES_USER)"
                 - -d
                 - "$(POSTGRES_DB)"
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            initialDelaySeconds: 15 # Opóźnienie pierwszego sprawdzenia po starcie kontenera
+            periodSeconds: 10       # Odstęp czasowy między kolejnymi testami
           readinessProbe:
+            # Sonda gotowości informująca Kubernetes, czy kontener może przyjmować ruch sieciowy
             exec:
               command:
                 - pg_isready
@@ -68,6 +81,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
+        # Deklaracja wolumenu powiązanego z PVC
         - name: postgres-volume
           persistentVolumeClaim:
             claimName: postgres-data
+

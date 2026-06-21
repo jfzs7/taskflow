@@ -1,3 +1,9 @@
+# =======================================================
+# service.yaml - Serwis sieciowy dla aplikacji API (FastAPI)
+#
+# Wewnętrzny load balancer klastra dystrybuujący ruch HTTP
+# pomiędzy replikami podów z etykietą app: api.
+# =======================================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,8 +11,9 @@ metadata:
   namespace: taskflow
 spec:
   ports:
-    - port: 8000
-      targetPort: 8000
+    - port: 8000       # Port wewnętrzny, na którym serwis nasłuchuje w klastrze
+      targetPort: 8000 # Port w kontenerze docelowym podu api
   selector:
     app: api
-  type: ClusterIP
+  type: ClusterIP      # Typ domyślny - usługa dostępna tylko wewnątrz klastra (wewnętrzne IP)
+
