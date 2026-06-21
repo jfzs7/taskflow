@@ -10,10 +10,10 @@
 <div class="dashboard-header">
     <div class="dashboard-title">
         <h1>Tablica zadań</h1>
-        <p class="subtitle">Zaimplementowano w pełni asynchroniczną tablicę zadań zintegrowaną z Redis Cache.</p>
+        <p class="subtitle">Asynchroniczne zarządzanie zadaniami w czasie rzeczywistym z integracją pamięci podręcznej Redis.</p>
     </div>
     <button class="btn btn-primary" id="btn-new-task">
-        <i class="fa-solid fa-plus"></i> Nowe zadanie
+        <i class="fa-solid fa-circle-plus"></i> Nowe zadanie
     </button>
 </div>
 
@@ -21,7 +21,7 @@
 <section class="stats-grid">
     <div class="stat-card">
         <div class="stat-icon todo">
-            <i class="fa-solid fa-list-check"></i>
+            <i class="fa-solid fa-hourglass-start"></i>
         </div>
         <div class="stat-details">
             <h3 id="stat-todo-count">0</h3>
@@ -30,7 +30,7 @@
     </div>
     <div class="stat-card">
         <div class="stat-icon progress">
-            <i class="fa-solid fa-spinner fa-spin-slow"></i>
+            <i class="fa-solid fa-rotate fa-spin-slow"></i>
         </div>
         <div class="stat-details">
             <h3 id="stat-progress-count">0</h3>
@@ -39,7 +39,7 @@
     </div>
     <div class="stat-card">
         <div class="stat-icon done">
-            <i class="fa-solid fa-circle-check"></i>
+            <i class="fa-solid fa-check-double"></i>
         </div>
         <div class="stat-details">
             <h3 id="stat-done-count">0</h3>
@@ -48,7 +48,7 @@
     </div>
     <div class="stat-card">
         <div class="stat-icon total">
-            <i class="fa-solid fa-layer-group"></i>
+            <i class="fa-solid fa-database"></i>
         </div>
         <div class="stat-details">
             <h3 id="stat-total-count">0</h3>
