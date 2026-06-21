@@ -46,15 +46,10 @@ Aplikację można uruchomić na dwa sposoby: lokalnie za pomocą **Docker Compos
     ./scripts/deploy-minikube.sh
     ```
 3.  Po wdrożeniu, w celu udostępnienia aplikacji pod wspólną domeną `taskflow.local`, należy skonfigurować tunel oraz wpis hosts:
-    *   **Pobierz IP klastra Minikube**:
-        ```bash
-        minikube ip
-        ```
     *   **Dodaj mapowanie domeny** w pliku `/etc/hosts` (wymaga uprawnień administratora):
         ```text
-        <IP_MINIKUBE> taskflow.local
+        127.0.0.1 taskflow.local
         ```
-        (gdzie `<IP_MINIKUBE>` to IP uzyskane z poprzedniego polecenia, np. `192.168.49.2`).
     *   **Uruchom tunel Ingress** w osobnym terminalu (będzie działać w tle):
         ```bash
         minikube tunnel

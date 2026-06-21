@@ -13,7 +13,7 @@ Przed rozpoczęciem scenariuszy upewnij się, że:
    ```
 2. Domena `taskflow.local` jest zmapowana w pliku `/etc/hosts`:
    ```text
-   <IP_MINIKUBE> taskflow.local
+   127.0.0.1 taskflow.local
    ```
 3. Tunel dostępowy Ingress działa w osobnym terminalu:
    ```bash

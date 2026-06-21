@@ -85,7 +85,7 @@ Pokazanie uproszczonego wdrożenia i automatycznego startu Ingressa.
     ```bash
     ./scripts/start-all.sh
     ```
-    *(Skrypt zapyta o hasło sudo potrzebne do przypisania tunelu Ingress na porcie 80, po czym uruchomi tunel w tle. Pamiętaj o dodaniu wpisu w `/etc/hosts`: `<IP_MINIKUBE> taskflow.local`)*.
+    *(Skrypt zapyta o hasło sudo potrzebne do przypisania tunelu Ingress na porcie 80, po czym uruchomi tunel w tle. Pamiętaj o dodaniu wpisu w `/etc/hosts`: `127.0.0.1 taskflow.local`)*.
 *   **Zatrzymanie**: Na koniec prezentacji możesz zatrzymać wszystkie serwisy i zwolnić zasoby jedną komendą:
     ```bash
     ./scripts/stop-all.sh
