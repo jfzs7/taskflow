@@ -10,9 +10,10 @@ do określania gotowości (readiness) i żywotności (liveness) podów.
 """
 
 import time
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Gauge
 
 from config import get_settings
 from database import get_db
@@ -25,6 +26,12 @@ settings = get_settings()
 
 # Zapisanie czasu startu aplikacji do uptime
 APP_START_TIME = time.time()
+
+# --- Definicja wskaźników Prometheus (Gauges) ---
+# Gauges pozwalają na prezentację aktualnego stanu liczbowego zadań w podziale na etykiety (labels)
+TASKS_TOTAL = Gauge("taskflow_tasks_total", "Calkowita liczba zadan w systemie")
+TASKS_BY_STATUS = Gauge("taskflow_tasks_by_status", "Liczba zadan w podziale na statusy", ["status"])
+TASKS_BY_PRIORITY = Gauge("taskflow_tasks_by_priority", "Liczba zadan w podziale na priorytety", ["priority"])
 
 
 @router.get("/health", response_model=HealthResponse, summary="Health check aplikacji")
@@ -61,10 +68,10 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.get("/metrics", response_model=MetricsResponse, summary="Metryki aplikacji")
+@router.get("/metrics", response_model=MetricsResponse, summary="Metryki aplikacji (JSON)")
 async def get_metrics(db: AsyncSession = Depends(get_db)):
     """
-    Pobranie metryk operacyjnych aplikacji.
+    Pobranie metryk operacyjnych aplikacji w formacie JSON.
 
     Zwraca statystyki zadań (liczba wg statusu i priorytetu)
     oraz czas działania aplikacji (uptime).
@@ -78,3 +85,25 @@ async def get_metrics(db: AsyncSession = Depends(get_db)):
         tasks_by_priority=stats["tasks_by_priority"],
         uptime_seconds=round(time.time() - APP_START_TIME, 2),
     )
+
+
+@router.get("/prometheus", response_class=Response, summary="Metryki aplikacji (Prometheus)")
+async def prometheus_metrics(db: AsyncSession = Depends(get_db)):
+    """
+    Pobranie metryk operacyjnych aplikacji w formacie tekstowym Prometheus.
+
+    Wywoływane przez serwer Prometheus podczas skrobania (scraping).
+    Aktualizuje wskaźniki zadań na bieżąco przed wygenerowaniem danych.
+    """
+    service = TaskService(db)
+    stats = await service.get_task_stats()
+
+    # Aktualizacja wskaźników przed pobraniem najnowszego zrzutu metryk
+    TASKS_TOTAL.set(stats["total_tasks"])
+    for status_key, val in stats["tasks_by_status"].items():
+        TASKS_BY_STATUS.labels(status=status_key).set(val)
+    for priority_key, val in stats["tasks_by_priority"].items():
+        TASKS_BY_PRIORITY.labels(priority=priority_key).set(val)
+
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+

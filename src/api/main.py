@@ -10,8 +10,10 @@ Uruchomienie aplikacji:
     uvicorn main:app --reload --host 0.0.0.0 --port 8000
 """
 
+import time
 import logging
 from contextlib import asynccontextmanager
+from prometheus_client import Counter, Histogram
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -87,6 +89,45 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Definicja metryk Prometheus dla ruchu API ---
+REQUEST_COUNT = Counter(
+    "taskflow_requests_total",
+    "Calkowita liczba zapytan HTTP",
+    ["method", "endpoint", "http_status"]
+)
+REQUEST_LATENCY = Histogram(
+    "taskflow_request_latency_seconds",
+    "Czas wykonania zapytania HTTP w sekundach",
+    ["method", "endpoint"]
+)
+
+# --- Middleware do automatycznego pomiaru ruchu HTTP ---
+@app.middleware("http")
+async def prometheus_middleware(request: Request, call_next):
+    start_time = time.time()
+    endpoint = request.url.path
+    
+    # Pominięcie plików statycznych w zbieraniu metryk
+    if endpoint.startswith("/static") or endpoint.startswith("/favicon"):
+        return await call_next(request)
+        
+    response = await call_next(request)
+    
+    # Pomiar czasu i zapisanie metryk
+    duration = time.time() - start_time
+    REQUEST_COUNT.labels(
+        method=request.method,
+        endpoint=endpoint,
+        http_status=response.status_code
+    ).inc()
+    
+    REQUEST_LATENCY.labels(
+        method=request.method,
+        endpoint=endpoint
+    ).observe(duration)
+    
+    return response
 
 # --- Konfiguracja plików statycznych i szablonów ---
 # Obsługa plików statycznych (CSS, JS)

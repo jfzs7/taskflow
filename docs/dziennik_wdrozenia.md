@@ -75,6 +75,9 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 |------|------|
 | `docs/zarys_pracy_magisterskiej.md` | Zarys pracy magisterskiej — 9 rozdziałów. Zawiera spis treści, opis każdego podrozdziału z odniesieniami do aplikacji TaskFlow (perspektywa 3. osoby). |
 | `docs/deployment-local.md` | Instrukcja wdrożenia lokalnego (Docker Compose). Krok po kroku: instalacja Dockera, uruchomienie, weryfikacja, polecenia cURL i rozwiązywanie problemów. |
+| `docs/devops-overview.md` | Teoretyczny przegląd metodyki DevOps: kultura organizacyjna, filary modelu CALMS, najważniejsze praktyki inżynieryjne i odniesienie do projektu. |
+| `docs/cloud-comparison.md` | Porównanie platform chmurowych (AWS vs Azure vs GCP): orkiestracja Kubernetes, bazy danych, pamięć cache, integracje z narzędziami CI/CD. |
+| `docs/cost-analysis.md` | Analiza kosztów chmurowych i FinOps: koszty utrzymania klastra mikroserwisów, oszczędzanie poprzez autoskalowanie oraz instancje typu Spot. |
 | `docs/dokumentacja_techniczna.md` | Profesjonalna dokumentacja techniczna: opis architektury systemu i oprogramowania, model bazy danych PostgreSQL, specyfikacja endpointów REST API, konfiguracja Kubernetes. |
 | `docs/dokumentacja_uzytkowa.md` | Podręcznik użytkownika (User Manual): wymagania systemowe, instrukcja instalacji, przewodnik po graficznym interfejsie Kanban, obsługa API i sekcja rozwiązywania problemów. |
 | `docs/dziennik_wdrozenia.md` | Ten plik — dziennik wdrożenia i spis plików. |
