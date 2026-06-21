@@ -1,138 +1,197 @@
-# Scenariusze Monitoringu i Obserwowalności (Prometheus + Grafana)
+# Praktyczne Scenariusze Obserwowalności (Prometheus + Grafana)
 
-Dokument przedstawia praktyczne scenariusze demonstracji działania systemu monitoringu w aplikacji **TaskFlow** uruchomionej w klastrze Kubernetes. Scenariusze te doskonale nadają się do prezentacji przed promotorem i komisją, pokazując praktyczne zastosowanie koncepcji **DevOps** i **SRE** (Site Reliability Engineering) w projekcie.
+Dokument przedstawia **5 zaawansowanych scenariuszy demonstracyjnych** przygotowanych na potrzeby prezentacji przed promotorem i komisją. Scenariusze te pokazują, jak w praktyce działa monitorowanie (obserwowalność) oraz automatyczne alertowanie w systemie **TaskFlow** uruchomionym w klastrze Kubernetes (Minikube).
 
 ---
 
 ## Wymagania wstępne (Setup)
 
-Przed rozpoczęciem scenariuszy upewnij się, że:
-1. Klaster Minikube jest wdrożony i działa:
-   ```bash
-   ./scripts/deploy-minikube.sh
-   ```
-2. Domena `taskflow.local` jest zmapowana w pliku `/etc/hosts`:
-   ```text
-   127.0.0.1 taskflow.local
-   ```
-3. Tunel dostępowy Ingress działa w osobnym terminalu:
-   ```bash
-   minikube tunnel
-   ```
-4. Masz dostęp do paneli w przeglądarce:
-   * **Aplikacja WWW**: [http://taskflow.local](http://taskflow.local)
+Przed uruchomieniem scenariuszy upewnij się, że środowisko działa poprawnie:
+1. Uruchom aplikację i tunel:
+   * **Terminal 1**: `./scripts/start-all.sh`
+   * **Terminal 2**: `minikube tunnel` (wymaga hasła administratora)
+2. Zmapuj domenę: Upewnij się, że wpis `127.0.0.1 taskflow.local` znajduje się w pliku `/etc/hosts`.
+3. Adresy dostępowe w przeglądarce:
+   * **Aplikacja**: [http://taskflow.local](http://taskflow.local)
    * **Prometheus**: [http://taskflow.local/prometheus](http://taskflow.local/prometheus)
    * **Grafana**: [http://taskflow.local/grafana](http://taskflow.local/grafana)
 
 ---
 
-## Scenariusz 1: Monitorowanie stanu aplikacji (Metryki Biznesowe / Stanowe)
+## Scenariusz 1: Monitorowanie dynamiki i struktury zadań (Metryki Biznesowe)
 
-**Cel**: Zademonstrowanie, jak zmiany w bazie danych i działania użytkowników w GUI są w czasie rzeczywistym odzwierciedlane w systemie monitorowania bez odpytywania samej bazy danych SQL.
+**Cel**: Zademonstrowanie, jak działania użytkowników w GUI (Kanban) są natychmiast mapowane na metryki Prometheus i prezentowane na biznesowych panelach Grafany.
 
-### Krok 1: Weryfikacja stanu początkowego
-1. Otwórz panel Prometheus i przejdź do zakładki **Graph**.
-2. Wpisz i uruchom zapytanie:
-   ```promql
-   taskflow_tasks_total
-   ```
-   Zwrócona wartość będzie równa aktualnej liczbie zadań w systemie (np. `0` jeśli system jest pusty).
-3. Sprawdź liczbę zadań według statusu:
-   ```promql
-   taskflow_tasks_by_status
-   ```
-   Zobaczysz podział na etykiety `status="todo"`, `status="in_progress"`, `status="done"`.
+### 1. Zapytania PromQL do użycia w panelach Grafany:
+*   **Całkowita liczba zadań (Wykres typu *Stat* / *Gauge*):**
+    ```promql
+    taskflow_tasks_total
+    ```
+*   **Podział zadań na statusy (Wykres typu *Bar Gauge* / *Pie Chart*):**
+    ```promql
+    taskflow_tasks_by_status
+    ```
+*   **Podział zadań na priorytety:**
+    ```promql
+    taskflow_tasks_by_priority
+    ```
 
-### Krok 2: Generowanie zmian w aplikacji
-1. Otwórz tablicę Kanban [http://taskflow.local](http://taskflow.local).
-2. Dodaj 3 nowe zadania:
-   * *Zadanie A* (Priorytet: Niski)
-   * *Zadanie B* (Priorytet: Średni)
-   * *Zadanie C* (Priorytet: Wysoki)
-3. Przeciągnij *Zadanie B* do kolumny **W toku**, a *Zadanie C* do kolumny **Zakończone**.
+### 2. Akcja wywołująca (Trigger):
+1. Wejdź na [http://taskflow.local](http://taskflow.local) i dodaj np. 4 nowe zadania (przypisz im różne priorytety: *Wysoki*, *Średni*).
+2. Przeciągnij część zadań do kolumny **W toku** oraz **Zakończone**.
 
-### Krok 3: Obserwacja w monitoringu
-1. Wróć do panelu Prometheus i uruchom ponownie:
-   ```promql
-   taskflow_tasks_total
-   ```
-   Wartość wzrośnie do `3`.
-2. Uruchom zapytanie o statusy:
-   ```promql
-   taskflow_tasks_by_status
-   ```
-   Powinieneś zobaczyć wartości:
-   * `{status="todo"} => 1`
-   * `{status="in_progress"} => 1`
-   * `{status="done"} => 1`
-3. W panelu Grafana ([http://taskflow.local/grafana](http://taskflow.local/grafana)) stwórz prosty wykres typu **Gauge** lub **Stat** dla tych metryk. Pokazuje to, jak menedżerowie projektu mogą w czasie rzeczywistym obserwować postęp prac zespołu (np. wskaźnik przepustowości Kanban).
+### 3. Oczekiwany efekt wizualny:
+*   W panelu Grafana wykresy kołowe (Pie Charts) i słupkowe automatycznie zmienią swoje proporcje po kolejnym cyklu pobrania metryk (domyślnie co 5s). Pokazuje to zdolność systemu do śledzenia procesów biznesowych bez obciążania głównej bazy danych PostgreSQL zapytaniami typu `COUNT(*)`.
 
 ---
 
-## Scenariusz 2: Test obciążeniowy i skalowanie horyzontalne (HPA)
+## Scenariusz 2: Test obciążeniowy i automatyczne skalowanie (Skalowanie HPA)
 
-**Cel**: Zademonstrowanie reakcji infrastruktury na nagły skok ruchu sieciowego (tzw. "Slashdot effect") oraz automatycznego skalowania replik (Auto-scaling) przez Kubernetes.
+**Cel**: Demonstracja reakcji klastra na nagły skok ruchu sieciowego, automatyczne skalowanie podów (HPA) oraz monitorowanie zużycia zasobów CPU.
 
-### Krok 1: Przygotowanie monitorowania podów
-Otwórz terminal i uruchom ciągły podgląd statusu Horizontal Pod Autoscaler (HPA) oraz podów API:
-```bash
-kubectl get hpa,pods -n taskflow -w
+### 1. Zapytania PromQL do użycia na wykresach Grafany:
+*   **Ruch sieciowy (żądania na sekundę):**
+    ```promql
+    sum(rate(taskflow_requests_total[1m]))
+    ```
+*   **Liczba aktywnych replik (podów) backendu API:**
+    ```promql
+    kube_deployment_status_replicas_available{deployment="api", namespace="taskflow"}
+    ```
+
+### 2. Reguła Alertu Prometheus (Alerting Rule):
+```yaml
+alert: APIHighCPUAlert
+expr: sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace="taskflow", pod=~"api-.*"}) > 80
+for: 1m
+labels:
+  severity: warning
+annotations:
+  summary: "Wysokie zużycie CPU na podach API"
 ```
-Zwróć uwagę na aktualne zużycie CPU (powinno być bliskie `0%` lub `1%`) oraz liczbę replik backendu API (domyślnie `2`).
 
-### Krok 2: Uruchomienie generatora obciążenia
-W osobnym oknie terminala uruchomimy prosty skrypt w pętli generujący setki zapytań do API backendu.
-Możesz użyć wbudowanego w macOS narzędzia curl w pętli:
+### 3. Akcja wywołująca (Trigger):
+Uruchom w terminalu pętlę generującą wysokie obciążenie (odpytywanie API w nieskończoność):
 ```bash
-# Pętla wysyłająca zapytania GET do listy zadań tak szybko, jak to możliwe
 while true; do curl -s -o /dev/null -w "%{http_code}\n" http://taskflow.local/api/v1/tasks/; done
 ```
-*(Alternatywnie, jeśli masz zainstalowane narzędzie `ab` (ApacheBench), możesz uruchomić: `ab -n 10000 -c 50 http://taskflow.local/api/v1/tasks/`)*.
 
-### Krok 3: Obserwacja reakcji systemu
-1. **W Prometheus/Grafana**: Uruchom zapytanie obrazujące ruch (żądania na sekundę):
-   ```promql
-   rate(taskflow_requests_total[1m])
-   ```
-   Zobaczysz gwałtowny skok wykresu przedstawiający liczbę obsłużonych zapytań na sekundę.
-2. **W terminalu (HPA)**: Po około 1-2 minutach stałego obciążenia wskaźnik CPU w poleceniu `kubectl get hpa` przekroczy zdefiniowany próg `50%` (np. wzrośnie do `120%`).
-3. **Skalowanie**: Kubernetes automatycznie podejmie decyzję o wyskalowaniu wdrożenia. Zobaczysz uruchamianie nowych podów API (liczba wzrośnie z `2` do np. `4` lub maksymalnie `5` w zależności od obciążenia).
-4. **Zatrzymanie testu**: Wyłącz pętlę w terminalu (`Ctrl + C`). Po kilku minutach bezczynności HPA zauważy spadek obciążenia i bezpiecznie zmniejszy liczbę replik z powrotem do wartości `2` (skalowanie w dół / cool-down).
+### 4. Oczekiwany efekt:
+*   W Grafanie na wykresie *Ruch sieciowy* pojawi się gwałtowny skok (np. do kilkudziesięciu RPS).
+*   Po około minucie, w odpowiedzi na obciążenie CPU, Kubernetes zwiększy liczbę podów API (zobaczysz zmianę na wykresie *Liczba replik* z `2` do np. `4`).
+*   W Prometheus w zakładce **Alerts** status alertu `APIHighCPUAlert` przejdzie w stan **PENDING**, a po minucie w **FIRING**.
 
 ---
 
-## Scenariusz 3: Monitorowanie błędów i wykrywanie anomalii (Metryki Techniczne)
+## Scenariusz 3: Symulacja awarii bazy danych PostgreSQL (Krytyczny Alert SRE)
 
-**Cel**: Zademonstrowanie, jak SRE/DevOps może natychmiast wykryć problemy z integracją lub błędy aplikacji (np. złe zapytania klientów, ataki) za pomocą analizy kodów statusu HTTP.
+**Cel**: Zademonstrowanie reakcji monitoringu na całkowity brak dostępności kluczowego komponentu systemu (bazy danych SQL) oraz przejście systemu w stan krytycznej awarii.
 
-### Krok 1: Weryfikacja poprawnych zapytań
-W standardowym trybie pracy aplikacja zwraca głównie kody `200` (OK) lub `201` (Created).
-Wpisując w Prometheus:
-```promql
-sum(rate(taskflow_requests_total{http_status="200"}[5m]))
+### 1. Zapytania PromQL do użycia w Grafanie:
+*   **Status połączenia z bazą danych (wartość `1` = OK, `0` = Awaria):**
+    ```promql
+    # Zwraca 0, jeśli baza danych PostgreSQL w `/health` raportuje błąd
+    taskflow_database_status
+    ```
+    *(Wartość metryki jest eksportowana bezpośrednio z FastAPI na podstawie statusu DB).*
+
+### 2. Reguła Alertu Prometheus:
+```yaml
+alert: PostgresDatabaseDown
+expr: taskflow_database_status == 0
+for: 10s
+labels:
+  severity: critical
+annotations:
+  summary: "KRYTYCZNA AWARIA: Brak połączenia z bazą danych PostgreSQL!"
 ```
-Widzimy stabilny ruch oznaczający poprawne działanie systemu.
 
-### Krok 2: Generowanie błędów walidacji (HTTP 422 Unprocessable Entity)
-Spróbujmy celowo wysłać niepoprawne żądanie do API (np. utworzenie zadania bez wymaganego pola `title`):
+### 3. Akcja wywołująca (Trigger):
+Skaluj wdrożenie bazy danych PostgreSQL do `0` replik, symulując jej awarię lub wyłączenie serwera:
 ```bash
-# Wyślij błędny payload (pusty słownik)
-for i in {1..50}; do
+kubectl scale statefulset postgres -n taskflow --replicas=0
+```
+
+### 4. Oczekiwany efekt:
+*   Aplikacja [http://taskflow.local](http://taskflow.local) wyświetli wskaźnik `API Offline` na czerwono w nagłówku.
+*   Wykres statusu bazy danych w Grafanie natychmiast spadnie do wartości `0`.
+*   W panelu Prometheus w ciągu 10 sekund wyzwoli się krytyczny alert **PostgresDatabaseDown** w stanie **FIRING**.
+*   *Przywrócenie działania*: Przywróć bazę komendą `kubectl scale statefulset postgres -n taskflow --replicas=1`. Wykresy wrócą do normy, a alert wygaśnie.
+
+---
+
+## Scenariusz 4: Wyłączenie cache Redis (Graceful Degradation & Latency Degradation)
+
+**Cel**: Pokazanie mechanizmu *graceful degradation* (aplikacja działa bez Redis, ale wolniej) oraz monitorowanie wpływu braku pamięci podręcznej na czas odpowiedzi API.
+
+### 1. Zapytania PromQL do użycia w Grafanie:
+*   **Średnia latencja (czas odpowiedzi) API (w sekundach):**
+    ```promql
+    sum(rate(taskflow_request_latency_seconds_sum[2m])) / sum(rate(taskflow_request_latency_seconds_count[2m]))
+    ```
+*   **Status dostępności Redis Cache (wykres typu *State Timeline*):**
+    ```promql
+    taskflow_redis_status
+    ```
+
+### 2. Reguła Alertu Prometheus:
+```yaml
+alert: RedisCacheUnavailable
+expr: taskflow_redis_status == 0
+for: 30s
+labels:
+  severity: warning
+annotations:
+  summary: "Brak pamięci podręcznej Redis — degradacja wydajności aplikacji"
+```
+
+### 3. Akcja wywołująca (Trigger):
+1. Wyłącz usługę Redis:
+   ```bash
+   kubectl scale statefulset redis -n taskflow --replicas=0
+   ```
+2. Odśwież kilkukrotnie stronę aplikacji [http://taskflow.local](http://taskflow.local), aby wygenerować ruch bezpośrednio do bazy danych.
+
+### 4. Oczekiwany efekt:
+*   Aplikacja działa poprawnie (użytkownik nadal widzi i może edytować zadania, bo system pobiera je bezpośrednio z PostgreSQL).
+*   Wykres latencji w Grafanie zarejestruje wyraźny wzrost czasu odpowiedzi (ponieważ pomijany jest ultra-szybki odczyt z pamięci RAM).
+*   Alert `RedisCacheUnavailable` przejdzie w stan **FIRING** po 30 sekundach.
+*   *Przywrócenie*: Włącz ponownie Redis za pomocą: `kubectl scale statefulset redis -n taskflow --replicas=1`.
+
+---
+
+## Scenariusz 5: Monitorowanie błędów HTTP i anomalii w ruchu (Error Rate %)
+
+**Cel**: Prezentacja wykrywania anomalii aplikacji (błędy walidacji formularzy, ataki skanujące serwer) na podstawie procentowego udziału błędnych odpowiedzi.
+
+### 1. Zapytania PromQL do użycia w Grafanie:
+*   **Wskaźnik błędów API (Error Rate %):**
+    ```promql
+    sum(rate(taskflow_requests_total{http_status=~"[45].."}[2m])) / sum(rate(taskflow_requests_total[2m])) * 100
+    ```
+    *(Wzór wyznacza jaki procent ruchu z ostatnich 2 minut stanowią błędy klienta 4xx i serwera 5xx).*
+
+### 2. Reguła Alertu Prometheus:
+```yaml
+alert: APIHighErrorRate
+expr: (sum(rate(taskflow_requests_total{http_status=~"[45].."}[2m])) / sum(rate(taskflow_requests_total[2m])) * 100) > 15
+for: 1m
+labels:
+  severity: warning
+annotations:
+  summary: "Wskaźnik błędów HTTP przekroczył 15% całkowitego ruchu!"
+```
+
+### 3. Akcja wywołująca (Trigger):
+Wyślij w pętli błędne żądania POST (np. brakujący tytuł zadania wywoła walidację FastAPI i zwróci kod `422 Unprocessable Entity`):
+```bash
+for i in {1..100}; do
   curl -X POST http://taskflow.local/api/v1/tasks/ \
     -H "Content-Type: application/json" \
     -d '{}' -s -o /dev/null
 done
 ```
 
-### Krok 3: Obserwacja wykrywania błędów
-1. **W Prometheus**: Wpisz zapytanie filtrujące błędy klienta:
-   ```promql
-   taskflow_requests_total{http_status="422"}
-   ```
-   Licznik dla kodu statusu `422` natychmiast wzrośnie o `50`.
-2. **Obliczanie współczynnika błędów (Error Rate %)**: W systemach produkcyjnych najważniejszą metryką jest procentowy udział błędów w całym ruchu. Możemy go obliczyć za pomocą następującego wyrażenia PromQL:
-   ```promql
-   sum(rate(taskflow_requests_total{http_status=~"[45].."}[2m])) / sum(rate(taskflow_requests_total[2m])) * 100
-   ```
-   To zapytanie pokazuje, jaki procent wszystkich zapytań z ostatnich 2 minut stanowiły błędy typu 4xx i 5xx. W trakcie naszego testu wykres ten gwałtownie skoczy w górę.
-3. **Zastosowanie**: Na tej podstawie w Grafanie konfiguruje się **Alerty** (np. wysyłanie powiadomienia na Slack/Discord, jeśli współczynnik błędów przekroczy 5% w ciągu minuty).
+### 4. Oczekiwany efekt:
+*   Na wykresie *Error Rate %* w Grafanie pojawi się pionowa linia wskazująca nagły wzrost do poziomu np. 80-90% błędów w całkowitym ruchu.
+*   W panelu Prometheus wyzwolony zostanie alert `APIHighErrorRate`.

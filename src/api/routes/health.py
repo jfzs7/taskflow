@@ -32,6 +32,8 @@ APP_START_TIME = time.time()
 TASKS_TOTAL = Gauge("taskflow_tasks_total", "Calkowita liczba zadan w systemie")
 TASKS_BY_STATUS = Gauge("taskflow_tasks_by_status", "Liczba zadan w podziale na statusy", ["status"])
 TASKS_BY_PRIORITY = Gauge("taskflow_tasks_by_priority", "Liczba zadan w podziale na priorytety", ["priority"])
+DATABASE_STATUS = Gauge("taskflow_database_status", "Status polaczenia z baza danych (1=OK, 0=brak)")
+REDIS_STATUS = Gauge("taskflow_redis_status", "Status polaczenia z Redis (1=OK, 0=brak)")
 
 
 @router.get("/health", response_model=HealthResponse, summary="Health check aplikacji")
@@ -104,6 +106,19 @@ async def prometheus_metrics(db: AsyncSession = Depends(get_db)):
         TASKS_BY_STATUS.labels(status=status_key).set(val)
     for priority_key, val in stats["tasks_by_priority"].items():
         TASKS_BY_PRIORITY.labels(priority=priority_key).set(val)
+
+    # Aktualizacja statusu bazy danych
+    db_val = 1
+    try:
+        await db.execute(text("SELECT 1"))
+    except Exception:
+        db_val = 0
+    DATABASE_STATUS.set(db_val)
+
+    # Aktualizacja statusu cache Redis
+    redis_healthy = await check_redis_health()
+    redis_val = 1 if redis_healthy else 0
+    REDIS_STATUS.set(redis_val)
 
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
