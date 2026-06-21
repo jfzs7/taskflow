@@ -14,22 +14,15 @@ echo ""
 # 1. Wywołanie głównego skryptu wdrożenia Kubernetes
 ./scripts/deploy-minikube.sh
 
-# 2. Uruchomienie tunelu Ingress w tle
+# 2. Uruchomienie tunelu Ingress w osobnym oknie
 echo ""
-echo "🔑 Uruchamianie tunelu Ingress..."
-echo "Skrypt wymaga uprawnień sudo do powiązania Ingress z portami 80/443."
+echo "🔌 Uruchamianie tunelu Ingress w nowym oknie Terminala..."
+echo "Wprowadź hasło administratora w nowo otwartym oknie terminala, aby powiązać porty 80/443."
 
-# Odświeżenie sesji sudo (zapyta o hasło tylko raz)
-sudo -v
+# Uruchomienie tunelu w nowym oknie terminala macOS
+osascript -e 'tell app "Terminal" to do script "minikube tunnel"'
 
-# Zatrzymanie poprzednich tuneli jeśli wisiały w tle
-sudo pkill -f "minikube tunnel" 2>/dev/null || true
-
-# Uruchomienie tunelu w tle i zapisanie logów
-sudo nohup minikube tunnel > minikube_tunnel.log 2>&1 &
-
-echo "✅ Tunel Ingress został pomyślnie uruchomiony w tle."
-echo "   Logi tunelu są zapisywane w pliku: minikube_tunnel.log"
+echo "✅ Proces uruchamiania tunelu został zainicjowany w nowym oknie."
 echo ""
 echo "========================================"
 echo "  🚀 Wszystkie serwisy są gotowe!"
