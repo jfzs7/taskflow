@@ -111,6 +111,8 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 | Plik | Opis |
 |------|------|
 | `scripts/deploy-minikube.sh` | Skrypt automatyzujący uruchomienie Minikube, konfigurację dodatków, lokalne budowanie obrazu API i instalację manifestów. |
+| `scripts/start-all.sh` | Kompleksowy skrypt uruchamiający klaster, aplikację oraz tunel Ingress w tle (jednym poleceniem). |
+| `scripts/stop-all.sh` | Kompleksowy skrypt zatrzymujący tunel Ingress, wyłączający klaster Minikube i sprzątający kontenery Docker Compose. |
 
 ### Konfiguracja CI/CD (`.github/workflows/`)
 | Plik | Opis |

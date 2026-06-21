@@ -38,7 +38,7 @@ Główne katalogi i pliki w repozytorium:
     *   [src/api/services/cache_service.py](file:///Users/jakubfrancuz/Library/CloudStorage/GoogleDrive-jakub.francuz7@gmail.com/Mój dysk/praca_magisterska/src/api/services/cache_service.py) — logika integracji cache Redis (wzorzec Cache-Aside).
     *   `src/api/templates/` — szablony HTML (Jinja2) oraz kod interfejsu (CSS/JS).
 *   `tests/` — folder z automatycznymi testami jednostkowymi i integracyjnymi.
-*   `scripts/` — skrypty powłoki Bash automatyzujące instalację (`setup-local.sh`) i wdrożenie (`deploy-minikube.sh`).
+*   `scripts/` — skrypty powłoki Bash automatyzujące instalację (`setup-local.sh`), wdrożenie (`deploy-minikube.sh`), uruchomienie wszystkiego (`start-all.sh`) oraz zatrzymanie środowiska (`stop-all.sh`).
 
 ---
 
@@ -79,19 +79,18 @@ Pokazanie funkcjonalności samej aplikacji.
 *   **Działanie**: Otwórz w przeglądarce adres `http://localhost`. Dodaj nowe zadanie za pomocą formularza, przeciągnij je (drag-and-drop) do kolumny "W toku", a następnie usuń jedno z zadań klikając w ikonę kosza.
 *   **Omawiane zagadnienie**: Wyjaśnienie, że każda akcja użytkownika wywołuje asynchroniczne żądanie API. Przeniesienie zadania aktualizuje rekord w bazie danych SQL oraz natychmiastowo unieważnia klucze w cache Redis (wzorzec Cache-Aside), zapewniając brak rozbieżności w danych.
 
-### Krok 4: Wdrożenie aplikacji w klastrze Kubernetes i konfiguracja Ingress
-Pokazanie działania systemu w środowisku klastrowym (Minikube).
-*   **Działanie**: Zatrzymaj kontenery lokalne (`make docker-down`), a następnie uruchom skrypt wdrożenia klastra:
+### Krok 4: Uruchomienie środowiska Kubernetes jednym poleceniem
+Pokazanie uproszczonego wdrożenia i automatycznego startu Ingressa.
+*   **Działanie**: Uruchom jeden skrypt startowy:
     ```bash
-    ./scripts/deploy-minikube.sh
+    ./scripts/start-all.sh
     ```
-    W celu obsługi domeny `taskflow.local` wraz z jej podkatalogami (Ingress), skonfiguruj tunel dostępowy:
-    1.  Dodaj wpis do pliku `/etc/hosts` wskazujący na adres IP Minikube (np. `192.168.49.2 taskflow.local`). Adres IP Minikube uzyskasz poleceniem `minikube ip`.
-    2.  Uruchom proces tunelujący w osobnym oknie terminala:
-        ```bash
-        minikube tunnel
-        ```
-*   **Omawiane zagadnienie**: Wyjaśnienie, że skrypt automatycznie buduje obraz lokalnie w rejestrze Minikube, konfiguruje przestrzeń nazw, limity zasobów, trwałe woluminy dla baz danych (StatefulSets), 2 repliki aplikacji API oraz routing Ingress. Dzięki temu cała infrastruktura jest dostępna pod jedną, wspólną domeną `taskflow.local`.
+    *(Skrypt zapyta o hasło sudo potrzebne do przypisania tunelu Ingress na porcie 80, po czym uruchomi tunel w tle. Pamiętaj o dodaniu wpisu w `/etc/hosts`: `<IP_MINIKUBE> taskflow.local`)*.
+*   **Zatrzymanie**: Na koniec prezentacji możesz zatrzymać wszystkie serwisy i zwolnić zasoby jedną komendą:
+    ```bash
+    ./scripts/stop-all.sh
+    ```
+*   **Omawiane zagadnienie**: Wyjaśnienie, że skrypty automatyzują cały proces uruchomienia: od weryfikacji Minikube, budowania obrazów API lokalnie w rejestrze, wdrożenia manifestów K8s, aż po uruchomienie procesu tunelowania w tle. Cała infrastruktura jest natychmiast gotowa do pracy.
 
 ### Krok 5: Prezentacja metryk i monitoringu (Prometheus + Grafana)
 Pokazanie mechanizmów obserwowania systemu w czasie rzeczywistym.
