@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<!-- =======================================================
+  base.html - Główny szablon bazowy dla aplikacji TaskFlow.
+  Zdefiniowano strukturę HTML, zaimportowano czcionkę Outfit
+  z Google Fonts oraz bibliotekę Font Awesome do ikon.
+======================================================= -->
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TaskFlow - Zarządzanie Zadaniami{% endblock %}</title>
+    
+    <!-- Import czcionki Outfit i Inter dla nowoczesnej typografii -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome do ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Główny arkusz stylów aplikacji -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Panel boczny (Sidebar) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-square-poll-vertical logo-icon"></i>
+                    <span class="logo-text">Task<span>Flow</span></span>
+                </div>
+                <div class="version">v{{ version }}</div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active">
+                        <a href="/">
+                            <i class="fa-solid fa-house"></i>
+                            <span>Tablica zadań</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/docs" target="_blank">
+                            <i class="fa-solid fa-book"></i>
+                            <span>Dokumentacja API</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/health" target="_blank">
+                            <i class="fa-solid fa-heart-pulse"></i>
+                            <span>Stan systemu</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="devops-badge">
+                    <i class="fa-solid fa-infinity"></i>
+                    <span>DevOps Project</span>
+                </div>
+                <p class="author">Jakub Francuz &copy; 2026</p>
+            </div>
+        </aside>
+
+        <!-- Główny obszar roboczy -->
+        <main class="main-content">
+            <!-- Górny pasek nawigacyjny -->
+            <header class="main-header">
+                <div class="header-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Szukaj zadań...">
+                </div>
+                <div class="header-profile">
+                    <div class="status-indicator">
+                        <span class="status-dot healthy" id="api-status-dot"></span>
+                        <span id="api-status-text">API Online</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Zawartość strony dynamicznej -->
+            <div class="content-wrapper">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Kontener na powiadomienia Toast -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Skrypt JavaScript -->
+    <script src="/static/js/app.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

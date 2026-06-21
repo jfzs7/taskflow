@@ -13,8 +13,11 @@ Uruchomienie aplikacji:
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 
 from config import get_settings
 from database import close_db, init_db
@@ -89,23 +92,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Skonfigurowano obsługę statycznych plików i szablonów ---
+# Zamontowano katalog ze statycznymi zasobami (CSS, JS)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Skonfigurowano silnik szablonów Jinja2
+templates = Jinja2Templates(directory="templates")
+
 # --- Zarejestrowano routery ---
 app.include_router(health_router)
 app.include_router(tasks_router)
 
 
-@app.get("/", tags=["Root"], summary="Strona główna API")
-async def root():
+@app.get("/", response_class=HTMLResponse, tags=["Root"], summary="Strona główna (Panel Użytkownika)")
+async def root(request: Request):
     """
-    Zwrócono podstawowe informacje o API.
+    Wyrenderowano panel użytkownika aplikacji TaskFlow.
 
-    Endpoint ten służy jako punkt wejścia — informuje użytkownika
-    o dostępnych zasobach (dokumentacja, health check).
+    Zwrócono stronę HTML z dynamicznym panelem do zarządzania zadaniami,
+    wykorzystując silnik szablonów Jinja2.
     """
-    return {
-        "app": settings.app_name,
-        "version": settings.app_version,
-        "docs": "/docs",
-        "health": "/health",
-        "api": "/api/v1/tasks",
-    }
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request, "app_name": settings.app_name, "version": settings.app_version}
+    )
+

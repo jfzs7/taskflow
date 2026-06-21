@@ -9,12 +9,12 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_root_endpoint(client):
-    """Sprawdzono endpoint główny (/) — zwraca informacje o API."""
+    """Sprawdzono endpoint główny (/) — zwraca stronę HTML panelu użytkownika."""
     response = await client.get("/")
     assert response.status_code == 200
-    data = response.json()
-    assert "app" in data
-    assert data["app"] == "TaskFlow"
+    assert "text/html" in response.headers["content-type"]
+    assert "TaskFlow" in response.text
+
 
 
 @pytest.mark.asyncio
