@@ -23,32 +23,32 @@ from services.task_service import TaskService
 router = APIRouter(tags=["Monitoring"])
 settings = get_settings()
 
-# Zapisano czas uruchomienia aplikacji (do obliczania uptime)
+# Zapisanie czasu startu aplikacji do uptime
 APP_START_TIME = time.time()
 
 
 @router.get("/health", response_model=HealthResponse, summary="Health check aplikacji")
 async def health_check(db: AsyncSession = Depends(get_db)):
     """
-    Sprawdzono stan zdrowia aplikacji i jej zależności.
+    Sprawdzenie stanu zdrowia aplikacji i jej zależności.
 
     Endpoint wykorzystywany przez:
     - Kubernetes liveness/readiness probes
     - Load balancery (Nginx, cloud LB)
     - Systemy monitoringu (Prometheus, Grafana)
     """
-    # Sprawdzono połączenie z bazą danych
+    # Sprawdzenie połączenia z bazą danych
     db_status = "healthy"
     try:
         await db.execute(text("SELECT 1"))
     except Exception:
         db_status = "unhealthy"
 
-    # Sprawdzono połączenie z Redis
+    # Sprawdzenie połączenia z Redis
     redis_healthy = await check_redis_health()
     redis_status = "healthy" if redis_healthy else "unavailable"
 
-    # Określono ogólny status aplikacji
+    # Określenie ogólnego statusu aplikacji
     overall = "healthy" if db_status == "healthy" else "unhealthy"
 
     return HealthResponse(
@@ -64,9 +64,9 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 @router.get("/metrics", response_model=MetricsResponse, summary="Metryki aplikacji")
 async def get_metrics(db: AsyncSession = Depends(get_db)):
     """
-    Pobrano metryki operacyjne aplikacji.
+    Pobranie metryk operacyjnych aplikacji.
 
-    Zwrócono statystyki zadań (liczba wg statusu i priorytetu)
+    Zwraca statystyki zadań (liczba wg statusu i priorytetu)
     oraz czas działania aplikacji (uptime).
     """
     service = TaskService(db)

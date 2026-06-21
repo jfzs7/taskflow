@@ -21,17 +21,7 @@ from models import Priority, Status
 
 class TaskCreate(BaseModel):
     """
-    Schemat tworzenia nowego zadania.
-
-    Zdefiniowano pola wymagane i opcjonalne do utworzenia zadania.
-    Walidacja odbywa się automatycznie przez Pydantic.
-
-    Przykład użycia (JSON body):
-        {
-            "title": "Wdrożyć CI/CD",
-            "description": "Skonfigurować GitHub Actions",
-            "priority": "high"
-        }
+    Walidacja danych przy tworzeniu zadania.
     """
     title: str = Field(
         ...,
@@ -55,16 +45,9 @@ class TaskCreate(BaseModel):
 
 class TaskUpdate(BaseModel):
     """
-    Schemat aktualizacji zadania.
+    Walidacja danych przy aktualizacji zadania.
 
-    Wszystkie pola są opcjonalne — aktualizowane są tylko przesłane pola
-    (wzorzec Partial Update / PATCH).
-
-    Przykład użycia (JSON body):
-        {
-            "status": "in_progress",
-            "priority": "critical"
-        }
+    Wszystkie pola są opcjonalne (Partial Update / PATCH).
     """
     title: Optional[str] = Field(
         default=None,
@@ -93,12 +76,7 @@ class TaskUpdate(BaseModel):
 
 class TaskResponse(BaseModel):
     """
-    Schemat odpowiedzi dla pojedynczego zadania.
-
-    Zdefiniowano strukturę danych zwracanych przez API
-    po operacjach CRUD na zadaniach.
-    Zastosowano model_config z from_attributes=True,
-    co umożliwia automatyczną konwersję z obiektów SQLAlchemy.
+    Struktura odpowiedzi dla pojedynczego zadania.
     """
     model_config = ConfigDict(from_attributes=True)
 
@@ -114,10 +92,7 @@ class TaskResponse(BaseModel):
 
 class TaskListResponse(BaseModel):
     """
-    Schemat odpowiedzi dla listy zadań z paginacją.
-
-    Opakowano listę zadań w obiekt zawierający metadane paginacji,
-    co jest zgodne z najlepszymi praktykami projektowania REST API.
+    Struktura odpowiedzi dla listy zadań z paginacją.
     """
     tasks: list[TaskResponse] = Field(description="Lista zadań")
     total: int = Field(description="Całkowita liczba zadań")
@@ -128,7 +103,7 @@ class TaskListResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     """
-    Schemat odpowiedzi z wiadomością (np. potwierdzenie usunięcia).
+    Prosta odpowiedź z wiadomością tekstową.
     """
     message: str = Field(description="Treść wiadomości")
     detail: Optional[str] = Field(default=None, description="Dodatkowe szczegóły")
@@ -140,10 +115,7 @@ class MessageResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """
-    Schemat odpowiedzi health check.
-
-    Zdefiniowano strukturę informacji o stanie zdrowia aplikacji
-    i jej zależności (baza danych, cache).
+    Struktura odpowiedzi health check.
     """
     status: str = Field(description="Ogólny status aplikacji (healthy/unhealthy)")
     app_name: str = Field(description="Nazwa aplikacji")
@@ -155,11 +127,7 @@ class HealthResponse(BaseModel):
 
 class MetricsResponse(BaseModel):
     """
-    Schemat odpowiedzi z metrykami aplikacji.
-
-    Zdefiniowano podstawowe metryki operacyjne aplikacji,
-    które mogą być wykorzystane przez systemy monitoringu
-    (np. Prometheus, Grafana).
+    Struktura odpowiedzi z metrykami aplikacji.
     """
     total_tasks: int = Field(description="Całkowita liczba zadań")
     tasks_by_status: dict = Field(description="Liczba zadań wg statusu")

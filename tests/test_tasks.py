@@ -1,8 +1,5 @@
 """
 Testy endpointów CRUD zadań aplikacji TaskFlow.
-
-Przetestowano pełen cykl operacji na zadaniach:
-tworzenie, odczyt, aktualizację, usuwanie, filtrowanie i paginację.
 """
 
 import pytest
@@ -10,7 +7,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_create_task(client):
-    """Sprawdzono tworzenie nowego zadania z poprawnymi danymi."""
+    """Sprawdzenie tworzenia nowego zadania z poprawnymi danymi."""
     response = await client.post("/api/v1/tasks/", json={
         "title": "Testowe zadanie",
         "description": "Opis testowego zadania",
@@ -26,7 +23,7 @@ async def test_create_task(client):
 
 @pytest.mark.asyncio
 async def test_create_task_minimal(client):
-    """Sprawdzono tworzenie zadania z minimalnymi danymi (tylko tytuł)."""
+    """Sprawdzenie tworzenia zadania z minimalnymi danymi (tylko tytuł)."""
     response = await client.post("/api/v1/tasks/", json={"title": "Minimalne zadanie"})
     assert response.status_code == 201
     data = response.json()
@@ -36,14 +33,14 @@ async def test_create_task_minimal(client):
 
 @pytest.mark.asyncio
 async def test_create_task_empty_title(client):
-    """Sprawdzono odrzucenie zadania z pustym tytułem."""
+    """Sprawdzenie odrzucenia zadania z pustym tytułem."""
     response = await client.post("/api/v1/tasks/", json={"title": ""})
     assert response.status_code == 422  # Validation Error
 
 
 @pytest.mark.asyncio
 async def test_get_tasks_empty(client):
-    """Sprawdzono pobranie pustej listy zadań."""
+    """Sprawdzenie pobrania pustej listy zadań."""
     response = await client.get("/api/v1/tasks/")
     assert response.status_code == 200
     data = response.json()
@@ -53,8 +50,8 @@ async def test_get_tasks_empty(client):
 
 @pytest.mark.asyncio
 async def test_get_tasks_with_data(client):
-    """Sprawdzono pobranie listy z utworzonymi zadaniami."""
-    # Utworzono 3 zadania
+    """Sprawdzenie pobrania listy z utworzonymi zadaniami."""
+    # Tworzenie 3 zadań
     for i in range(3):
         await client.post("/api/v1/tasks/", json={"title": f"Zadanie {i+1}"})
 
@@ -67,12 +64,12 @@ async def test_get_tasks_with_data(client):
 
 @pytest.mark.asyncio
 async def test_get_task_by_id(client):
-    """Sprawdzono pobranie zadania po identyfikatorze."""
-    # Utworzono zadanie
+    """Sprawdzenie pobrania zadania po ID."""
+    # Tworzenie zadania
     create_resp = await client.post("/api/v1/tasks/", json={"title": "Do pobrania"})
     task_id = create_resp.json()["id"]
 
-    # Pobrano zadanie
+    # Pobranie zadania
     response = await client.get(f"/api/v1/tasks/{task_id}")
     assert response.status_code == 200
     assert response.json()["title"] == "Do pobrania"
@@ -80,14 +77,14 @@ async def test_get_task_by_id(client):
 
 @pytest.mark.asyncio
 async def test_get_task_not_found(client):
-    """Sprawdzono odpowiedź 404 dla nieistniejącego zadania."""
+    """Sprawdzenie odpowiedzi 404 dla nieistniejącego zadania."""
     response = await client.get("/api/v1/tasks/99999")
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_update_task(client):
-    """Sprawdzono aktualizację zadania (partial update)."""
+    """Sprawdzenie aktualizacji zadania (partial update)."""
     create_resp = await client.post("/api/v1/tasks/", json={"title": "Do aktualizacji"})
     task_id = create_resp.json()["id"]
 
@@ -103,22 +100,22 @@ async def test_update_task(client):
 
 @pytest.mark.asyncio
 async def test_delete_task(client):
-    """Sprawdzono usuwanie zadania (soft-delete)."""
+    """Sprawdzenie usuwania zadania (soft-delete)."""
     create_resp = await client.post("/api/v1/tasks/", json={"title": "Do usunięcia"})
     task_id = create_resp.json()["id"]
 
-    # Usunięto zadanie
+    # Usunięcie zadania
     response = await client.delete(f"/api/v1/tasks/{task_id}")
     assert response.status_code == 200
 
-    # Sprawdzono, że zadanie nie jest już dostępne
+    # Sprawdzenie czy jest niedostępne
     get_resp = await client.get(f"/api/v1/tasks/{task_id}")
     assert get_resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_filter_by_status(client):
-    """Sprawdzono filtrowanie zadań po statusie."""
+    """Sprawdzenie filtrowania zadań po statusie."""
     await client.post("/api/v1/tasks/", json={"title": "Zadanie TODO"})
     create_resp = await client.post("/api/v1/tasks/", json={"title": "Zadanie IN_PROGRESS"})
     task_id = create_resp.json()["id"]
@@ -132,7 +129,7 @@ async def test_filter_by_status(client):
 
 @pytest.mark.asyncio
 async def test_pagination(client):
-    """Sprawdzono paginację listy zadań."""
+    """Sprawdzenie paginacji listy zadań."""
     for i in range(5):
         await client.post("/api/v1/tasks/", json={"title": f"Zadanie {i+1}"})
 

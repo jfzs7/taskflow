@@ -2,7 +2,7 @@
 # ============================================
 # cleanup.sh — Skrypt czyszczenia środowiska
 #
-# Przygotowano skrypt usuwający kontenery, woluminy
+# Skrypt usuwający kontenery, woluminy
 # i dane tymczasowe projektu TaskFlow.
 # ============================================
 
@@ -13,12 +13,12 @@ echo "  TaskFlow — Czyszczenie środowiska"
 echo "========================================"
 echo ""
 
-# --- Zatrzymano kontenery Docker Compose ---
+# --- Zatrzymanie kontenerów Docker Compose ---
 echo "🐳 Zatrzymywanie kontenerów Docker Compose..."
 docker-compose down --remove-orphans 2>/dev/null || true
 echo "  ✅ Kontenery zatrzymane."
 
-# --- Usunięto woluminy (opcjonalnie) ---
+# --- Usunięcie woluminów (opcjonalnie) ---
 read -p "Czy usunąć woluminy danych (PostgreSQL, Redis)? [y/N] " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -28,7 +28,7 @@ else
     echo "  ℹ️  Woluminy zachowane."
 fi
 
-# --- Usunięto obrazy Docker (opcjonalnie) ---
+# --- Usunięcie obrazów Docker (opcjonalnie) ---
 read -p "Czy usunąć zbudowane obrazy Docker? [y/N] " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -38,7 +38,7 @@ else
     echo "  ℹ️  Obrazy zachowane."
 fi
 
-# --- Usunięto pliki tymczasowe Python ---
+# --- Usunięcie plików tymczasowych Python ---
 echo "🧹 Czyszczenie plików tymczasowych..."
 find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true

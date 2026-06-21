@@ -1,8 +1,8 @@
 /* ==========================================================================
    app.js - Logika kliencka aplikacji TaskFlow.
-   Zaimplementowano obsługę żądań asynchronicznych (fetch API) do backendu
-   FastAPI, dynamiczne renderowanie zadań, filtrowanie, sortowanie,
-   obsługę okna modalnego oraz komunikaty powiadomień Toast.
+   Obsługa żądań asynchronicznych (fetch API) do backendu FastAPI,
+   dynamiczne renderowanie zadań, filtrowanie, sortowanie,
+   obsługa okna modalnego oraz komunikaty powiadomień Toast.
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {

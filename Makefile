@@ -1,6 +1,5 @@
-# ============================================
 # Makefile — Skróty poleceń projektu TaskFlow
-# Przygotowano zestaw komend ułatwiających
+# Zestaw komend ułatwiających
 # uruchamianie, testowanie i wdrażanie aplikacji.
 # ============================================
 
@@ -19,10 +18,10 @@ dev: ## Uruchamia serwer deweloperski (bez Dockera)
 
 # --- Testy ---
 test: ## Uruchamia testy jednostkowe z pokryciem kodu
-	cd src/api && python -m pytest ../../tests/ -v --cov=. --cov-report=term-missing
+	cd src/api && python3 -m pytest ../../tests/ -v --cov=. --cov-report=term-missing
 
 test-quick: ## Uruchamia testy bez raportu pokrycia
-	cd src/api && python -m pytest ../../tests/ -v
+	cd src/api && python3 -m pytest ../../tests/ -v
 
 # --- Jakość kodu ---
 lint: ## Sprawdza jakość kodu (flake8)

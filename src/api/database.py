@@ -11,12 +11,11 @@ from sqlalchemy.orm import DeclarativeBase
 
 from config import get_settings
 
-# Pobrano konfigurację aplikacji
+# Inicjalizacja konfiguracji
 settings = get_settings()
 
-# --- Utworzono asynchroniczny silnik bazy danych ---
-# Parametr echo=True włącza logowanie zapytań SQL (przydatne w trybie deweloperskim).
-# pool_size i max_overflow kontrolują pulę połączeń z bazą danych.
+# --- Silnik asynchroniczny bazy danych ---
+# echo=True loguje zapytania SQL w trybie debug.
 engine = create_async_engine(
     settings.database_url,
     echo=settings.app_debug,
@@ -24,9 +23,8 @@ engine = create_async_engine(
     max_overflow=10,
 )
 
-# --- Skonfigurowano fabrykę sesji asynchronicznych ---
-# expire_on_commit=False zapobiega wygasaniu obiektów po zatwierdzeniu transakcji,
-# co jest wymagane w kontekście asynchronicznym.
+# --- Fabryka sesji asynchronicznych ---
+# expire_on_commit=False zapobiega przedwczesnemu wygasaniu atrybutów modelu.
 async_session_factory = async_sessionmaker(
     engine,
     class_=AsyncSession,
@@ -36,26 +34,16 @@ async_session_factory = async_sessionmaker(
 
 class Base(DeclarativeBase):
     """
-    Zdefiniowano bazową klasę deklaratywną SQLAlchemy.
-
-    Wszystkie modele bazy danych dziedziczą po tej klasie,
-    co umożliwia automatyczne tworzenie tabel na podstawie
-    definicji modeli (wzorzec Active Record).
+    Bazowa klasa modeli SQLAlchemy.
     """
     pass
 
 
 async def get_db() -> AsyncSession:
     """
-    Zaimplementowano generator sesji bazodanowej (Dependency Injection).
+    Generator sesji bazy danych (do Dependency Injection w FastAPI).
 
-    Wykorzystywany jako zależność w endpointach FastAPI:
-        @router.get("/tasks")
-        async def get_tasks(db: AsyncSession = Depends(get_db)):
-            ...
-
-    Sesja jest automatycznie zamykana po zakończeniu obsługi żądania HTTP,
-    co zapobiega wyciekom połączeń z bazą danych.
+    Automatycznie zamyka sesję po zakończeniu żądania HTTP.
     """
     async with async_session_factory() as session:
         try:
@@ -66,14 +54,9 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     """
-    Zainicjalizowano schemat bazy danych.
+    Inicjalizacja schematu bazy danych.
 
-    Utworzono wszystkie tabele zdefiniowane w modelach SQLAlchemy.
-    Wywołanie tej funkcji następuje podczas uruchamiania aplikacji
-    (zdarzenie 'lifespan' w FastAPI).
-
-    Uwaga: W środowisku produkcyjnym zalecane jest stosowanie
-    migracji Alembic zamiast automatycznego tworzenia tabel.
+    Tworzy tabele w bazie, jeśli jeszcze nie istnieją.
     """
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -81,9 +64,6 @@ async def init_db():
 
 async def close_db():
     """
-    Zamknięto połączenie z bazą danych.
-
-    Wywołanie tej funkcji następuje podczas zamykania aplikacji
-    w celu prawidłowego zwolnienia zasobów (puli połączeń).
+    Zamknięcie połączenia z bazą danych (zwolnienie puli).
     """
     await engine.dispose()

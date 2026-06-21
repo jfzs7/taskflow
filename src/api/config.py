@@ -13,15 +13,13 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     """
-    Klasa konfiguracyjna aplikacji.
+    Ustawienia konfiguracji całej aplikacji.
 
-    Zdefiniowano wszystkie parametry konfiguracyjne aplikacji,
-    które mogą zostać nadpisane przez zmienne środowiskowe.
-    Zastosowano wzorzec Singleton (poprzez lru_cache) w celu
-    zapewnienia jednej instancji konfiguracji w całej aplikacji.
+    Klasa definiuje wszystkie parametry konfiguracyjne aplikacji,
+    które można nadpisać zmiennymi środowiskowymi.
     """
 
-    # --- Ustawienia aplikacji ---
+    # --- Ogólne ---
     app_name: str = "TaskFlow"
     app_version: str = "1.0.0"
     app_env: str = "development"
@@ -29,7 +27,7 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     app_port: int = 8000
 
-    # --- Baza danych PostgreSQL ---
+    # --- PostgreSQL ---
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "taskflow"
@@ -45,8 +43,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """
-        Wygenerowano URL połączenia z bazą danych PostgreSQL.
-        Wykorzystano sterownik asyncpg do obsługi asynchronicznych zapytań.
+        URL połączenia asynchronicznego z PostgreSQL (asyncpg).
         """
         return (
             f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
@@ -56,8 +53,7 @@ class Settings(BaseSettings):
     @property
     def database_url_sync(self) -> str:
         """
-        Wygenerowano synchroniczny URL połączenia z bazą danych.
-        Wykorzystywany przez Alembic do migracji schematu bazy danych.
+        Synchroniczny URL połączenia z PostgreSQL (np. do migracji Alembic).
         """
         return (
             f"postgresql://{self.postgres_user}:{self.postgres_password}"
@@ -66,16 +62,13 @@ class Settings(BaseSettings):
 
     @property
     def redis_url(self) -> str:
-        """Wygenerowano URL połączenia z serwerem Redis."""
+        """URL połączenia z Redis."""
         if self.redis_password:
             return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/{self.redis_db}"
         return f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}"
 
     class Config:
-        """
-        Skonfigurowano źródło zmiennych środowiskowych.
-        Plik .env jest wczytywany automatycznie, jeśli istnieje.
-        """
+        """Konfiguracja źródła zmiennych (.env)"""
         env_file = ".env"
         env_file_encoding = "utf-8"
 
@@ -83,10 +76,6 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     """
-    Zwrócono singleton instancji konfiguracji.
-
-    Zastosowano dekorator @lru_cache w celu zapewnienia,
-    że konfiguracja jest wczytywana tylko raz podczas
-    cyklu życia aplikacji (wzorzec Singleton).
+    Zwraca singleton z konfiguracją aplikacji (zapisany w cache).
     """
     return Settings()

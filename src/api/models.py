@@ -24,10 +24,7 @@ from database import Base
 
 class Priority(str, enum.Enum):
     """
-    Typ wyliczeniowy priorytetu zadania.
-
-    Zdefiniowano cztery poziomy priorytetu, od najniższego do krytycznego.
-    Dziedziczenie po str umożliwia automatyczną serializację do JSON.
+    Priorytety zadań.
     """
     LOW = "low"
     MEDIUM = "medium"
@@ -37,13 +34,7 @@ class Priority(str, enum.Enum):
 
 class Status(str, enum.Enum):
     """
-    Typ wyliczeniowy statusu zadania.
-
-    Zdefiniowano cztery stany cyklu życia zadania:
-    - TODO: zadanie oczekujące na realizację
-    - IN_PROGRESS: zadanie w trakcie realizacji
-    - DONE: zadanie zakończone
-    - ARCHIVED: zadanie zarchiwizowane (soft-delete)
+    Statusy cyklu życia zadań.
     """
     TODO = "todo"
     IN_PROGRESS = "in_progress"
@@ -53,21 +44,10 @@ class Status(str, enum.Enum):
 
 class Task(Base):
     """
-    Model zadania (Task) — główna encja aplikacji TaskFlow.
+    Model reprezentujący tabelę zadań (tasks).
 
-    Zmapowano obiekt Python na tabelę 'tasks' w bazie PostgreSQL.
-    Zastosowano wzorzec soft-delete (pole is_deleted) zamiast
-    fizycznego usuwania rekordów, co umożliwia odzyskiwanie danych.
-
-    Atrybuty:
-        id (int): Unikalny identyfikator zadania (klucz główny, auto-increment).
-        title (str): Tytuł zadania (wymagany, max 255 znaków).
-        description (str): Szczegółowy opis zadania (opcjonalny).
-        priority (Priority): Priorytet zadania (domyślnie: MEDIUM).
-        status (Status): Status zadania (domyślnie: TODO).
-        created_at (datetime): Data i czas utworzenia (ustawiane automatycznie).
-        updated_at (datetime): Data i czas ostatniej modyfikacji (aktualizowane automatycznie).
-        is_deleted (bool): Flaga soft-delete (domyślnie: False).
+    Zastosowano soft-delete (pole is_deleted) zamiast
+    fizycznego usuwania rekordów z bazy.
     """
     __tablename__ = "tasks"
 
@@ -76,7 +56,7 @@ class Task(Base):
         primary_key=True,
         index=True,
         autoincrement=True,
-        comment="Unikalny identyfikator zadania"
+        comment="Identyfikator zadania"
     )
     title = Column(
         String(255),
@@ -88,41 +68,41 @@ class Task(Base):
         Text,
         nullable=True,
         default="",
-        comment="Szczegółowy opis zadania"
+        comment="Szczegółowy opis"
     )
     priority = Column(
         Enum(Priority),
         default=Priority.MEDIUM,
         nullable=False,
-        comment="Priorytet zadania (low, medium, high, critical)"
+        comment="Priorytet (low, medium, high, critical)"
     )
     status = Column(
         Enum(Status),
         default=Status.TODO,
         nullable=False,
         index=True,
-        comment="Status zadania (todo, in_progress, done, archived)"
+        comment="Status (todo, in_progress, done, archived)"
     )
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
-        comment="Data i czas utworzenia zadania"
+        comment="Data utworzenia"
     )
     updated_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
-        comment="Data i czas ostatniej modyfikacji"
+        comment="Data aktualizacji"
     )
     is_deleted = Column(
         Boolean,
         default=False,
         nullable=False,
-        comment="Flaga soft-delete — oznacza zadanie jako usunięte bez fizycznego usuwania"
+        comment="Flaga soft-delete"
     )
 
     def __repr__(self) -> str:
-        """Zwrócono czytelną reprezentację obiektu Task (do celów debugowania)."""
+        """Reprezentacja tekstowa modelu (do debugowania)."""
         return f"<Task(id={self.id}, title='{self.title}', status={self.status.value})>"

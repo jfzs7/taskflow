@@ -17,26 +17,23 @@ import redis.asyncio as redis
 
 from config import get_settings
 
-# Skonfigurowano logger dla serwisu cache
+# Logowanie dla serwisu cache
 logger = logging.getLogger(__name__)
 
-# Pobrano konfigurację Redis
+# Konfiguracja
 settings = get_settings()
 
-# --- Utworzono klienta Redis ---
-# decode_responses=True zapewnia automatyczną konwersję bajtów na stringi.
-# Połączenie jest nawiązywane leniwie (przy pierwszym użyciu).
+# --- Instancja klienta Redis ---
+# decode_responses=True ułatwia operacje na stringach
 redis_client: Optional[redis.Redis] = None
 
 
 async def get_redis_client() -> Optional[redis.Redis]:
     """
-    Zwrócono instancję klienta Redis (Singleton).
+    Zwraca instancję klienta Redis (wzorzec Singleton).
 
-    Zastosowano wzorzec leniwej inicjalizacji — połączenie
-    z Redis jest nawiązywane dopiero przy pierwszym wywołaniu.
-    W przypadku błędu połączenia zwracany jest None,
-    a aplikacja kontynuuje działanie bez cache.
+    Leniwa inicjalizacja — połączenie następuje przy pierwszym żądaniu.
+    Gdy Redis leży, zwraca None i apka działa bez cache.
     """
     global redis_client
     if redis_client is None:
@@ -47,13 +44,13 @@ async def get_redis_client() -> Optional[redis.Redis]:
                 socket_connect_timeout=5,
                 retry_on_timeout=True,
             )
-            # Sprawdzono połączenie z Redis
+            # Sprawdzenie połączenia
             await redis_client.ping()
             logger.info("Nawiązano połączenie z Redis: %s", settings.redis_url)
         except (redis.ConnectionError, redis.TimeoutError) as e:
             logger.warning(
-                "Nie udało się połączyć z Redis: %s. "
-                "Aplikacja działa bez warstwy cache.",
+                "Brak połączenia z Redis (%s). "
+                "Praca bez warstwy cache.",
                 str(e)
             )
             redis_client = None
@@ -62,10 +59,7 @@ async def get_redis_client() -> Optional[redis.Redis]:
 
 async def close_redis():
     """
-    Zamknięto połączenie z Redis.
-
-    Wywołanie tej funkcji następuje podczas zamykania aplikacji
-    w celu prawidłowego zwolnienia zasobów.
+    Zamknięcie połączenia z Redis przy wyłączaniu aplikacji.
     """
     global redis_client
     if redis_client:
@@ -76,13 +70,9 @@ async def close_redis():
 
 async def cache_get(key: str) -> Optional[dict]:
     """
-    Pobrano wartość z cache Redis.
+    Pobranie wartości z cache.
 
-    Argumenty:
-        key: Klucz cache (np. 'task:1', 'tasks:page:1')
-
-    Zwrócono:
-        Słownik z danymi lub None (cache miss lub brak połączenia).
+    Zwraca słownik lub None (cache miss / brak połączenia).
     """
     client = await get_redis_client()
     if client is None:
@@ -102,15 +92,7 @@ async def cache_get(key: str) -> Optional[dict]:
 
 async def cache_set(key: str, value: dict, ttl: int = 300) -> bool:
     """
-    Zapisano wartość w cache Redis z czasem wygaśnięcia (TTL).
-
-    Argumenty:
-        key: Klucz cache
-        value: Słownik z danymi do zapisania
-        ttl: Czas życia w sekundach (domyślnie 300s = 5 minut)
-
-    Zwrócono:
-        True jeśli zapis się powiódł, False w przeciwnym razie.
+    Zapisanie wartości w cache na określony czas TTL.
     """
     client = await get_redis_client()
     if client is None:
@@ -127,13 +109,7 @@ async def cache_set(key: str, value: dict, ttl: int = 300) -> bool:
 
 async def cache_delete(key: str) -> bool:
     """
-    Usunięto wartość z cache Redis.
-
-    Argumenty:
-        key: Klucz cache do usunięcia
-
-    Zwrócono:
-        True jeśli usunięcie się powiodło, False w przeciwnym razie.
+    Usunięcie wartości z cache.
     """
     client = await get_redis_client()
     if client is None:
@@ -150,16 +126,9 @@ async def cache_delete(key: str) -> bool:
 
 async def cache_invalidate_pattern(pattern: str) -> bool:
     """
-    Unieważniono wszystkie klucze pasujące do wzorca.
+    Unieważnienie wszystkich kluczy pasujących do wzorca (np. tasks:*).
 
-    Zastosowano operację SCAN zamiast KEYS w celu uniknięcia
-    blokowania serwera Redis przy dużej liczbie kluczy.
-
-    Argumenty:
-        pattern: Wzorzec kluczy (np. 'tasks:*')
-
-    Zwrócono:
-        True jeśli operacja się powiodła, False w przeciwnym razie.
+    SCAN chroni Redis przed zablokowaniem przy dużej liczbie kluczy.
     """
     client = await get_redis_client()
     if client is None:
@@ -184,13 +153,7 @@ async def cache_invalidate_pattern(pattern: str) -> bool:
 
 async def check_redis_health() -> bool:
     """
-    Sprawdzono stan zdrowia połączenia z Redis.
-
-    Wykorzystywane przez endpoint /health do raportowania
-    statusu serwisu cache.
-
-    Zwrócono:
-        True jeśli Redis odpowiada na PING, False w przeciwnym razie.
+    Sprawdzenie stanu połączenia z Redis (wykorzystywane przez health check).
     """
     client = await get_redis_client()
     if client is None:

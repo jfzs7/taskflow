@@ -1,7 +1,5 @@
 """
 Testy endpointów health check aplikacji TaskFlow.
-
-Przetestowano endpointy monitoringu: /health i /.
 """
 
 import pytest
@@ -9,7 +7,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_root_endpoint(client):
-    """Sprawdzono endpoint główny (/) — zwraca stronę HTML panelu użytkownika."""
+    """Sprawdzenie endpointu głównego (/) — zwraca stronę HTML panelu użytkownika."""
     response = await client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
@@ -19,7 +17,7 @@ async def test_root_endpoint(client):
 
 @pytest.mark.asyncio
 async def test_health_endpoint(client):
-    """Sprawdzono endpoint health check (/health)."""
+    """Sprawdzenie endpointu health check (/health)."""
     response = await client.get("/health")
     assert response.status_code == 200
     data = response.json()

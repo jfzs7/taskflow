@@ -2,7 +2,7 @@
 
 ## Wymagania systemowe
 
-Przygotowano listę wymagań do uruchomienia aplikacji lokalnie:
+Lista wymagań do uruchomienia aplikacji lokalnie:
 
 | Narzędzie | Wersja | Cel |
 |-----------|--------|-----|
@@ -19,10 +19,10 @@ brew install --cask docker
 ```
 
 ### Opcja 2: Manualna
-1. Pobrano instalator z: https://docs.docker.com/desktop/install/mac-install/
-2. Przeciągnięto Docker.app do folderu Applications
-3. Uruchomiono Docker Desktop
-4. Zweryfikowano instalację:
+1. Pobranie instalatora z: https://docs.docker.com/desktop/install/mac-install/
+2. Przeciągnięcie Docker.app do folderu Applications
+3. Uruchomienie Docker Desktop
+4. Weryfikacja instalacji:
 ```bash
 docker --version
 docker-compose --version
@@ -38,18 +38,18 @@ cd taskflow
 
 ### Krok 2: Konfiguracja zmiennych środowiskowych
 ```bash
-# Skopiowano szablon zmiennych środowiskowych
+# Kopiowanie szablonu zmiennych środowiskowych
 cp .env.example .env
 
-# Opcjonalnie: edytowano plik .env (domyślne wartości są wystarczające)
+# Opcjonalnie: edycja pliku .env (domyślne wartości są wystarczające)
 ```
 
 ### Krok 3: Budowanie i uruchomienie
 ```bash
-# Zbudowano obrazy Docker i uruchomiono kontenery
+# Budowanie obrazów Docker i uruchomienie kontenerów
 docker-compose up -d --build
 
-# Sprawdzono status kontenerów
+# Sprawdzenie statusu kontenerów
 docker-compose ps
 ```
 
@@ -64,13 +64,13 @@ taskflow-nginx      running (healthy)   0.0.0.0:80->80/tcp
 
 ### Krok 4: Weryfikacja
 ```bash
-# Sprawdzono health check
+# Sprawdzenie health check
 curl http://localhost/health
 
-# Sprawdzono API (odpowiedź JSON)
+# Sprawdzenie API (odpowiedź JSON)
 curl http://localhost/api/v1/tasks/
 
-# Otworzono dokumentację Swagger UI
+# Otwarcie dokumentacji Swagger UI
 open http://localhost:8000/docs
 ```
 
@@ -78,13 +78,13 @@ open http://localhost:8000/docs
 
 | Polecenie | Opis |
 |-----------|------|
-| `docker-compose up -d` | Uruchomiono kontenery w tle |
-| `docker-compose down` | Zatrzymano kontenery |
-| `docker-compose logs -f` | Wyświetlono logi (na żywo) |
+| `docker-compose up -d` | Uruchomienie kontenerów w tle |
+| `docker-compose down` | Zatrzymanie kontenerów |
+| `docker-compose logs -f` | Wyświetlenie logów (na żywo) |
 | `docker-compose logs api` | Logi tylko serwisu API |
-| `docker-compose restart api` | Restartowano serwis API |
-| `docker-compose build --no-cache` | Przebudowano obrazy od zera |
-| `docker-compose ps` | Sprawdzono status kontenerów |
+| `docker-compose restart api` | Restart serwisu API |
+| `docker-compose build --no-cache` | Przebudowanie obrazów od zera |
+| `docker-compose ps` | Sprawdzenie statusu kontenerów |
 
 ## Testowanie API przez cURL
 
@@ -116,10 +116,10 @@ curl -X DELETE http://localhost/api/v1/tasks/1
 
 ### Kontener nie uruchamia się
 ```bash
-# Sprawdzono logi konkretnego kontenera
+# Sprawdzenie logów konkretnego kontenera
 docker-compose logs api
 
-# Sprawdzono, czy porty nie są zajęte
+# Sprawdzenie, czy porty nie są zajęte
 lsof -i :80
 lsof -i :8000
 lsof -i :5432
@@ -127,16 +127,16 @@ lsof -i :5432
 
 ### Baza danych nie odpowiada
 ```bash
-# Sprawdzono stan kontenera PostgreSQL
+# Sprawdzenie stanu kontenera PostgreSQL
 docker-compose exec postgres pg_isready -U taskflow_user
 
-# Połączono się z bazą bezpośrednio
+# Połączenie się z bazą bezpośrednio
 docker-compose exec postgres psql -U taskflow_user -d taskflow
 ```
 
 ### Reset danych
 ```bash
-# Usunięto kontenery i woluminy (UWAGA: dane zostaną utracone)
+# Usunięcie kontenerów i woluminów (UWAGA: dane zostaną utracone)
 docker-compose down -v
 docker-compose up -d --build
 ```

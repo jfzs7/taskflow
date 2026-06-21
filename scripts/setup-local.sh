@@ -2,7 +2,7 @@
 # ============================================
 # setup-local.sh — Skrypt konfiguracji środowiska lokalnego
 #
-# Przygotowano skrypt automatyzujący instalację wymaganych
+# Skrypt automatyzujący instalację wymaganych
 # narzędzi na macOS (Docker Desktop, Minikube, kubectl).
 # ============================================
 
@@ -13,7 +13,7 @@ echo "  TaskFlow — Konfiguracja środowiska"
 echo "========================================"
 echo ""
 
-# --- Sprawdzono system operacyjny ---
+# --- Sprawdzenie systemu operacyjnego ---
 OS=$(uname -s)
 echo "📋 System operacyjny: $OS"
 
@@ -46,7 +46,7 @@ if ! check_tool "docker"; then
         fi
     elif [ "$OS" = "Linux" ]; then
         echo "  ⚠️  Zainstaluj Docker Engine:"
-        echo "     https://docs.docker.com/engine/install/"
+        echo "     https://docker.com/engine/install/"
     fi
 fi
 
@@ -92,7 +92,7 @@ if ! check_tool "helm"; then
     fi
 fi
 
-# --- Utworzono plik .env ---
+# --- Tworzenie pliku .env ---
 echo ""
 if [ ! -f ".env" ]; then
     echo "📄 Tworzenie pliku .env z szablonu .env.example..."

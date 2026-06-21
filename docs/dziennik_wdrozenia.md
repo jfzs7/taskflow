@@ -169,7 +169,7 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 - `static/js/app.js` — fetch API (CRUD), drag-and-drop, filtrowanie/sortowanie, powiadomienia Toast
 - Zaktualizowano `main.py` — dodano StaticFiles, Jinja2Templates, endpoint `/` renderuje HTML
 
-**Dlaczego:** Frontend umożliwia prezentację aplikacji promotorowi bez znajomości cURL/Swagger. Tablica Kanban intuicyjnie wizualizuje przepływ zadań. Ciemny motyw i glassmorphism tworzą profesjonalny wygląd. Drag-and-drop między kolumnami automatycznie zmienia status zadania przez API.
+**Dlaczego:** Frontend umożliwia prezentację działania aplikacji i wygodną pracę bez znajomości cURL/Swagger. Tablica Kanban intuicyjnie wizualizuje przepływ zadań. Ciemny motyw i glassmorphism tworzą profesjonalny wygląd. Drag-and-drop między kolumnami automatycznie zmienia status zadania przez API.
 **Rezultat:** Pełnofunkcjonalny panel webowy do zarządzania zadaniami, zintegrowany z backendem API.
 
 ---
