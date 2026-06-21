@@ -1,0 +1,53 @@
+#!/bin/bash
+# ============================================
+# cleanup.sh — Skrypt czyszczenia środowiska
+#
+# Przygotowano skrypt usuwający kontenery, woluminy
+# i dane tymczasowe projektu TaskFlow.
+# ============================================
+
+set -e
+
+echo "========================================"
+echo "  TaskFlow — Czyszczenie środowiska"
+echo "========================================"
+echo ""
+
+# --- Zatrzymano kontenery Docker Compose ---
+echo "🐳 Zatrzymywanie kontenerów Docker Compose..."
+docker-compose down --remove-orphans 2>/dev/null || true
+echo "  ✅ Kontenery zatrzymane."
+
+# --- Usunięto woluminy (opcjonalnie) ---
+read -p "Czy usunąć woluminy danych (PostgreSQL, Redis)? [y/N] " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    docker volume rm taskflow-postgres-data taskflow-redis-data 2>/dev/null || true
+    echo "  ✅ Woluminy usunięte."
+else
+    echo "  ℹ️  Woluminy zachowane."
+fi
+
+# --- Usunięto obrazy Docker (opcjonalnie) ---
+read -p "Czy usunąć zbudowane obrazy Docker? [y/N] " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    docker rmi $(docker images "praca_magisterska*" -q) 2>/dev/null || true
+    echo "  ✅ Obrazy usunięte."
+else
+    echo "  ℹ️  Obrazy zachowane."
+fi
+
+# --- Usunięto pliki tymczasowe Python ---
+echo "🧹 Czyszczenie plików tymczasowych..."
+find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
+find . -type f -name "*.pyc" -delete 2>/dev/null || true
+find . -type f -name ".coverage" -delete 2>/dev/null || true
+find . -type f -name "test_taskflow.db" -delete 2>/dev/null || true
+echo "  ✅ Pliki tymczasowe usunięte."
+
+echo ""
+echo "========================================"
+echo "  ✅ Czyszczenie zakończone!"
+echo "========================================"

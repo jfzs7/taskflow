@@ -1,0 +1,37 @@
+# ============================================
+# requirements.txt — Zależności Python
+# Zdefiniowano wszystkie pakiety wymagane
+# do uruchomienia aplikacji TaskFlow.
+# ============================================
+
+# --- Framework webowy ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# --- Szablony HTML (frontend) ---
+jinja2==3.1.5
+
+# --- Baza danych ---
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.1
+
+# --- Walidacja i serializacja ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# --- Cache (Redis) ---
+redis[hiredis]==5.2.1
+
+# --- Testy ---
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1
+pytest-cov==6.0.0
+
+# --- Jakość kodu ---
+flake8==7.1.1
+black==24.10.0
+
+# --- Monitoring (metryki Prometheus) ---
+prometheus-client==0.21.1

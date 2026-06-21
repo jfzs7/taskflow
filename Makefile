@@ -1,0 +1,69 @@
+# ============================================
+# Makefile — Skróty poleceń projektu TaskFlow
+# Przygotowano zestaw komend ułatwiających
+# uruchamianie, testowanie i wdrażanie aplikacji.
+# ============================================
+
+.PHONY: help dev test lint format docker-up docker-down docker-build clean
+
+# --- Pomoc ---
+help: ## Wyświetla listę dostępnych poleceń
+	@echo "TaskFlow — Dostępne polecenia:"
+	@echo "=============================="
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+# --- Rozwój lokalny ---
+dev: ## Uruchamia serwer deweloperski (bez Dockera)
+	cd src/api && uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# --- Testy ---
+test: ## Uruchamia testy jednostkowe z pokryciem kodu
+	cd src/api && python -m pytest ../../tests/ -v --cov=. --cov-report=term-missing
+
+test-quick: ## Uruchamia testy bez raportu pokrycia
+	cd src/api && python -m pytest ../../tests/ -v
+
+# --- Jakość kodu ---
+lint: ## Sprawdza jakość kodu (flake8)
+	flake8 src/ tests/ --max-line-length=120 --exclude=__pycache__,venv
+
+format: ## Formatuje kod (black)
+	black src/ tests/ --line-length=120
+
+format-check: ## Sprawdza formatowanie kodu bez zmian
+	black src/ tests/ --line-length=120 --check
+
+# --- Docker ---
+docker-build: ## Buduje obrazy Docker
+	docker-compose build
+
+docker-up: ## Uruchamia aplikację w kontenerach Docker
+	docker-compose up -d
+
+docker-down: ## Zatrzymuje kontenery Docker
+	docker-compose down
+
+docker-logs: ## Wyświetla logi kontenerów
+	docker-compose logs -f
+
+docker-restart: ## Restartuje kontenery Docker
+	docker-compose down && docker-compose up -d
+
+# --- Kubernetes (Minikube) ---
+k8s-deploy: ## Wdraża aplikację na Minikube
+	./scripts/deploy-minikube.sh
+
+k8s-delete: ## Usuwa aplikację z Minikube
+	kubectl delete namespace taskflow --ignore-not-found
+
+k8s-status: ## Sprawdza status podów w Kubernetes
+	kubectl get all -n taskflow
+
+# --- Czyszczenie ---
+clean: ## Czyści pliki tymczasowe
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	find . -type d -name htmlcov -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name .coverage -delete 2>/dev/null || true

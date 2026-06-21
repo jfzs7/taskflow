@@ -1,0 +1,50 @@
+# ============================================
+# .gitignore — Plik konfiguracyjny Git
+# Zdefiniowano reguły ignorowania plików
+# nieśledzonych przez system kontroli wersji.
+# ============================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# --- Środowisko wirtualne ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- Zmienne środowiskowe ---
+.env
+!.env.example
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# --- Testy ---
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# --- Docker ---
+*.log
+
+# --- Kubernetes ---
+*.kubeconfig
+
+# --- System ---
+Thumbs.db
+.DS_Store
