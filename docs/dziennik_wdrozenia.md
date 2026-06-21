@@ -80,7 +80,7 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 | `docs/cost-analysis.md` | Analiza kosztów chmurowych i FinOps: koszty utrzymania klastra mikroserwisów, oszczędzanie poprzez autoskalowanie oraz instancje typu Spot. |
 | `docs/dokumentacja_techniczna.md` | Profesjonalna dokumentacja techniczna: opis architektury systemu i oprogramowania, model bazy danych PostgreSQL, specyfikacja endpointów REST API, konfiguracja Kubernetes. |
 | `docs/dokumentacja_uzytkowa.md` | Podręcznik użytkownika (User Manual): wymagania systemowe, instrukcja instalacji, przewodnik po graficznym interfejsie Kanban, obsługa API i sekcja rozwiązywania problemów. |
-| `docs/scenariusz_prezentacji.md` | Scenariusz prezentacji projektu: kolejność komend w terminalu, demonstracja interfejsu i metryk, opis architektury dla osób oceniających. |
+| `docs/prezentacja_dzialania.md` | Scenariusz prezentacji działania aplikacji: kolejność poleceń w terminalu, demonstracja interfejsu i metryk, opis architektury dla osób oceniających. |
 | `docs/dziennik_wdrozenia.md` | Ten plik — dziennik wdrożenia i spis plików. |
 
 ### Manifesty Kubernetes (`k8s/`)
