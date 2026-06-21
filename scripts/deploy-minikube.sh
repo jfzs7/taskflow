@@ -73,11 +73,17 @@ kubectl apply -f k8s/nginx/deployment.yaml
 # Routing Ingress
 kubectl apply -f k8s/ingress.yaml
 
+# Zasoby monitoringu (Prometheus i Grafana)
+kubectl apply -f k8s/monitoring/prometheus.yaml
+kubectl apply -f k8s/monitoring/grafana.yaml
+
 # --- Monitorowanie wdrożenia ---
 echo ""
 echo "⏳ Oczekiwanie na gotowość wdrożeń..."
 kubectl rollout status deployment/api -n taskflow --timeout=120s
 kubectl rollout status deployment/nginx -n taskflow --timeout=120s
+kubectl rollout status deployment/prometheus -n taskflow --timeout=120s
+kubectl rollout status deployment/grafana -n taskflow --timeout=120s
 
 echo ""
 echo "========================================"
@@ -88,8 +94,15 @@ echo "Aplikacja jest dostępna pod adresem:"
 # Pobranie adresu IP Minikube i portu dla Nginx NodePort
 MINIKUBE_IP=$(minikube ip)
 NODE_PORT=$(kubectl get svc nginx-svc -n taskflow -o jsonpath='{.spec.ports[0].nodePort}')
+PROM_PORT=$(kubectl get svc prometheus-svc -n taskflow -o jsonpath='{.spec.ports[0].nodePort}')
+GRAFANA_PORT=$(kubectl get svc grafana-svc -n taskflow -o jsonpath='{.spec.ports[0].nodePort}')
+
 echo "  🔗 Interfejs WWW: http://$MINIKUBE_IP:$NODE_PORT"
 echo "  🔗 Dokumentacja API: http://$MINIKUBE_IP:$NODE_PORT/docs"
+echo "  🔗 Serwer Prometheus: http://$MINIKUBE_IP:$PROM_PORT"
+echo "  🔗 Panel Grafana: http://$MINIKUBE_IP:$GRAFANA_PORT"
+echo ""
+echo "Wskazówka: Domyślny użytkownik Grafany to: admin / admin"
 echo ""
 echo "Możesz także użyć tunelu dla Ingress (wymaga podania hasła sudo):"
 echo "  1. Dodaj wpis do /etc/hosts: '$MINIKUBE_IP taskflow.local'"

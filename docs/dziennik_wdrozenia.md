@@ -102,6 +102,9 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 | `k8s/nginx/deployment.yaml` | Wdrożenie serwera Nginx z zamontowanym plikiem konfiguracyjnym z ConfigMap. |
 | `k8s/nginx/service.yaml` | Serwis zewnętrzny typu NodePort umożliwiający dostęp do serwera Nginx z hosta deweloperskiego. |
 | `k8s/ingress.yaml` | Definicja routingu i dostępu HTTP opartego na nazwie domeny `taskflow.local` dla klastra Kubernetes. |
+| `k8s/monitoring/prometheus.yaml` | Konfiguracja (ConfigMap), wdrożenie i serwis NodePort (port 30090) dla serwera monitoringu Prometheus. |
+| `k8s/monitoring/grafana.yaml` | Wdrożenie i serwis NodePort (port 30030) dla panelu Grafana z automatycznie skonfigurowanym źródłem danych Prometheus. |
+
 
 ### Zaktualizowane skrypty pomocnicze (`scripts/`)
 | Plik | Opis |
@@ -236,7 +239,13 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 
 ---
 
-## Następne kroki (planowane)
+### Krok 12 — Monitoring i dokumentacja końcowa (Faza 6)
+**Co:** Zaimplementowano monitorowanie w czasie rzeczywistym oraz ukończono analizę chmurową:
+- Wdrożono serwer Prometheus (`k8s/monitoring/prometheus.yaml`) zbierający metryki z API.
+- Wdrożono panel Grafana (`k8s/monitoring/grafana.yaml`) z automatycznie podpiętym źródłem danych Prometheus.
+- Dodano pliki dokumentacji teoretycznej i chmurowej: `docs/devops-overview.md` (metodyka DevOps i model CALMS), `docs/cloud-comparison.md` (porównanie AWS vs Azure vs GCP) oraz `docs/cost-analysis.md` (analiza kosztów chmurowych i optymalizacji FinOps).
+- Utworzono scenariusz demonstracji działania aplikacji dla celów prezentacyjnych (`docs/prezentacja_dzialania.md`).
 
-### Krok 12 — Monitoring + Dokumentacja końcowa (Faza 6)
-Integracja Prometheus + Grafana do monitorowania parametrów klastra i aplikacji (CPU, RAM, zapytania API, cache hits/misses), opracowanie instrukcji wdrożenia w chmurach publicznych (AWS/Azure/GCP) wraz z analizą kosztów.
+**Dlaczego:** Obserwowalność (Observability) i ciągłe doskonalenie na bazie zebranych danych to końcowe etapy pętli DevOps. Prometheus pozwala na zbieranie dokładnych parametrów działania klastra, a Grafana dostarcza przyjazne pulpity menedżerskie. Teoretyczne dokumenty chmurowe i FinOps spajają wdrożoną aplikację z zakresem i celem pracy magisterskiej.
+**Rezultat:** Projekt TaskFlow jest w pełni ukończony, wdrożony i gotowy do oceny.
+

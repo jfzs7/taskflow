@@ -1,0 +1,75 @@
+# =======================================================
+# prometheus.yaml - Konfiguracja i wdrożenie Prometheus
+#
+# Serwer Prometheus odpowiada za okresowe pobieranie (scraping)
+# metryk z endpointu /prometheus w aplikacji API.
+# =======================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: taskflow
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s # Pobieraj metryki co 5 sekund w celach demonstracyjnych
+      evaluation_interval: 5s
+
+    scrape_configs:
+      - job_name: 'taskflow-api'
+        metrics_path: '/prometheus' # Ścieżka do metryk w naszej aplikacji
+        static_configs:
+          - targets: ['api-svc:8000'] # DNS serwisu API w klastrze
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: taskflow
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.50.1
+          ports:
+            - containerPort: 9090
+              name: webport
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/prometheus/prometheus.yml
+              subPath: prometheus.yml
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-svc
+  namespace: taskflow
+spec:
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 30090
+  selector:
+    app: prometheus
+  type: NodePort # NodePort pozwala na wejście do panelu Prometheus z przeglądarki

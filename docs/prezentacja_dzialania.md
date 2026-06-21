@@ -90,10 +90,22 @@ Pokazanie działania systemu w środowisku klastrowym (Minikube).
     ```
 *   **Omawiane zagadnienie**: Wyjaśnienie, że skrypt automatycznie buduje obraz lokalnie w rejestrze Minikube, konfiguruje przestrzeń nazw, limity zasobów, trwałe woluminy dla baz danych (StatefulSets) oraz 2 repliki aplikacji API w celu zapewnienia bezprzerwowego działania w przypadku awarii jednego z kontenerów.
 
-### Krok 5: Prezentacja metryk i monitoringu
+### Krok 5: Prezentacja metryk i monitoringu (Prometheus + Grafana)
 Pokazanie mechanizmów obserwowania systemu w czasie rzeczywistym.
-*   **Działanie**: Otwórz adres API z metrykami JSON pod adresem `http://localhost:8000/metrics` lub adres tekstowy dla systemu Prometheus pod adresem tunelu Kubernetes `/prometheus`.
-*   **Omawiane zagadnienie**: Wyjaśnienie, że aplikacja na bieżąco zlicza czas działania, liczbę zapytań HTTP oraz ich opóźnienia, a także statystyki bazy danych. Dane te są przygotowane tak, aby system Prometheus mógł je automatycznie zbierać i wizualizować na wykresach Grafany.
+*   **Działanie**:
+    1.  Pokaż surowy endpoint `/prometheus` wygenerowany przez aplikację.
+    2.  Otwórz panel serwera Prometheus, wpisując w nowym terminalu:
+        ```bash
+        minikube service prometheus-svc -n taskflow
+        ```
+        (Można tam wpisać zapytanie `taskflow_requests_total` lub `taskflow_tasks_total` w zakładce Graph i zobaczyć wykres).
+    3.  Otwórz graficzny panel Grafana:
+        ```bash
+        minikube service grafana-svc -n taskflow
+        ```
+        (Logowanie: `admin` / `admin`. Wyszukaj dodane automatycznie źródło danych Prometheus).
+*   **Omawiane zagadnienie**: Wyjaśnienie, że aplikacja na bieżąco rejestruje ruch sieciowy i stan zadań, a serwer Prometheus zbiera te dane w klastrze. Grafana pozwala na tworzenie zaawansowanych pulpitów managerskich (Dashboards) do wizualizacji tych parametrów w czasie rzeczywistym.
+
 
 ### Krok 6: Pokazanie automatyzacji CI/CD na GitHubie
 Wskazanie na automatyczne zapewnianie jakości.
