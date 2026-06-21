@@ -22,8 +22,13 @@ echo "Wprowadź hasło administratora w nowo otwartym oknie terminala, aby powi�
 # Pobranie bezwzględnej ścieżki do minikube
 MINIKUBE_PATH=$(which minikube || echo "minikube")
 
-# Uruchomienie tunelu w nowym oknie terminala macOS
+# Upewnienie się, że ingress controller ma typ LoadBalancer (wymagane dla poprawnego mapowania portów na macOS)
+echo "🔧 Konfigurowanie usługi Ingress jako LoadBalancer..."
+kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"type": "LoadBalancer"}}' 2>/dev/null || true
+
+# Uruchomienie tunelu w nowym oknie terminala macOS i wyciągnięcie go na pierwszy plan
 osascript -e "tell app \"Terminal\" to do script \"$MINIKUBE_PATH tunnel\""
+osascript -e 'tell app "Terminal" to activate'
 
 echo "✅ Proces uruchamiania tunelu został zainicjowany w nowym oknie."
 echo ""
