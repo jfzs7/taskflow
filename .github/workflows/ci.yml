@@ -1,65 +1,72 @@
+# =======================================================
+# ci.yml - Przepływ ciągłej integracji (Continuous Integration)
+#
+# Walidacja jakości kodu oraz test budowania kontenerów
+# przed wdrożeniem lub scaleniem zmian z gałęzią główną.
+# =======================================================
 name: Continuous Integration
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]       # Uruchomienie przy pushu do gałęzi main
   pull_request:
-    branches: [ main ]
+    branches: [ main ]       # Uruchomienie przy pull requeście do main
 
 jobs:
   lint-and-test:
     name: Jakość kodu i Testy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest   # Wykorzystanie najnowszej wersji systemu Ubuntu
 
     steps:
     - name: Klonowanie repozytorium
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4 # Pobranie kodu źródłowego do kontenera Actions
 
     - name: Konfiguracja Python 3.12
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-        cache: 'pip'
+        cache: 'pip'          # Włączenie buforowania zależności pip dla szybszych kompilacji
 
     - name: Instalacja zależności
       run: |
         python -m pip install --upgrade pip
-        pip install -r src/api/requirements.txt
+        pip install -r src/api/requirements.txt # Instalacja wymaganych bibliotek z pliku zależności
 
     - name: Sprawdzenie formatowania (black)
       run: |
-        black src/ tests/ --line-length=120 --check
+        black src/ tests/ --line-length=120 --check # Sprawdzenie stylu formatowania kodu
 
     - name: Analiza statyczna kodu (flake8)
       run: |
-        flake8 src/ tests/ --max-line-length=120 --exclude=__pycache__,venv
+        flake8 src/ tests/ --max-line-length=120 --exclude=__pycache__,venv # Detekcja błędów i standardów PEP8
 
     - name: Uruchomienie testów jednostkowych (pytest)
       run: |
         cd src/api
-        python -m pytest ../../tests/ -v --cov=. --cov-report=term-missing
+        python -m pytest ../../tests/ -v --cov=. --cov-report=term-missing # Uruchomienie testów z pokryciem kodu
 
   docker-build:
     name: Weryfikacja budowania obrazów Docker
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest   # Niezależne zadanie weryfikujące poprawność Dockerfile
 
     steps:
     - name: Klonowanie repozytorium
       uses: actions/checkout@v4
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v3 # Konfiguracja zaawansowanego budowania Docker (Buildx)
 
     - name: Budowanie obrazu backendu API
       uses: docker/build-push-action@v5
       with:
         context: ./src/api
         file: ./src/api/Dockerfile
-        push: false
+        push: false          # Tylko test kompilacji obrazu, brak publikacji w rejestrze
 
     - name: Budowanie obrazu Nginx proxy
       uses: docker/build-push-action@v5
       with:
         context: ./src/nginx
         file: ./src/nginx/Dockerfile
-        push: false
+        push: false          # Tylko test kompilacji obrazu
+

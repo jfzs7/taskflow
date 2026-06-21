@@ -1,16 +1,22 @@
+# =======================================================
+# cd.yml - Przepływ ciągłego wdrażania (Continuous Deployment)
+#
+# Budowanie produkcyjnych obrazów kontenerów i publikowanie ich
+# w darmowym rejestrze GitHub Container Registry (GHCR) po scaleniu z main.
+# =======================================================
 name: Continuous Deployment
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ] # Wyzwalanie potoku tylko po wdrożeniu kodu do gałęzi głównej
 
 jobs:
   build-and-push:
     name: Budowanie i wypychanie obrazów do GHCR
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      packages: write
+      contents: read     # Uprawnienie do pobierania kodu z repozytorium
+      packages: write    # Wymagane uprawnienie do zapisu obrazów w rejestrze pakietów GitHub
 
     steps:
     - name: Klonowanie repozytorium
@@ -23,10 +29,11 @@ jobs:
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        username: ${{ github.actor }} # Nazwa konta użytkownika uruchamiającego potok
+        password: ${{ secrets.GITHUB_TOKEN }} # Automatyczny token uwierzytelniający sesję GitHub
 
     - name: Konfiguracja małych liter dla nazwy repozytorium
+      # GitHub Registry wymaga nazw pakietów pisanych małymi literami
       run: |
         echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
@@ -35,17 +42,18 @@ jobs:
       with:
         context: ./src/api
         file: ./src/api/Dockerfile
-        push: true
+        push: true           # Aktywacja wypchnięcia (push) gotowego obrazu do GHCR
         tags: |
           ghcr.io/${{ env.REPO_LOWER }}/api:latest
-          ghcr.io/${{ env.REPO_LOWER }}/api:${{ github.sha }}
+          ghcr.io/${{ env.REPO_LOWER }}/api:${{ github.sha }} # Tagowanie obrazu hashem commita dla powtarzalności wersji
 
     - name: Budowanie i wypychanie obrazu Nginx
       uses: docker/build-push-action@v5
       with:
         context: ./src/nginx
         file: ./src/nginx/Dockerfile
-        push: true
+        push: true           # Wypchnięcie obrazu proxy
         tags: |
           ghcr.io/${{ env.REPO_LOWER }}/nginx:latest
           ghcr.io/${{ env.REPO_LOWER }}/nginx:${{ github.sha }}
+
