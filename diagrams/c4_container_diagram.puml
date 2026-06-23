@@ -1,0 +1,46 @@
+@startuml C4_Container_Diagram_TaskFlow
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Diagram Kontenerow (C4 Level 2) - System TaskFlow
+
+LAYOUT_WITH_LEGEND()
+
+' ===== OSOBY / AKTORZY =====
+Person(user, "Uzytkownik", "Korzysta z aplikacji przez przegladarke internetowa.")
+
+' ===== SYSTEM ZEWNETRZNY =====
+System_Ext(docker_registry, "GitHub Container Registry (GHCR)", "Repozytorium gotowych obrazow kontenerow Docker po procesie CI/CD.")
+
+' ===== GRANICA SYSTEMU: KLASTER KUBERNETES / DOCKER COMPOSE =====
+System_Boundary(taskflow_system, "System TaskFlow (Klaster Kubernetes / Docker Compose)") {
+
+    ' --- Warstwa Ingress / Proxy ---
+    Container(nginx, "Nginx Reverse Proxy", "Docker Container: nginx:alpine", "Odbiera ruch HTTP na porcie 80. Kompresja gzip, logowanie zapytan. Przekazuje ruch do backendu API.")
+
+    ' --- Warstwa Aplikacji ---
+    Container(api, "Backend API", "Docker Container: Python 3.12 / FastAPI / Uvicorn", "Glowna logika biznesowa. Obsluza zadania REST API (CRUD). Eksportuje metryki Prometheus pod /metrics.")
+
+    ' --- Warstwa Danych ---
+    ContainerDb(postgres, "Baza Danych", "Docker Container: PostgreSQL 16 / StatefulSet K8s", "Relacyjna baza danych. Trwale przechowuje zadania. PersistentVolumeClaim zapewnia przetrwanie restartu podu.")
+
+    ContainerDb(redis, "Pamiec Podreczna (Cache)", "Docker Container: Redis 7 / StatefulSet K8s", "Cache in-memory implementujacy wzorzec Cache-Aside. Przyspiesza odczyty listy zadan. TTL = 60s.")
+
+    ' --- Warstwa Monitoringu ---
+    Container(prometheus, "Prometheus", "Docker Container: prom/prometheus", "Zbiera metryki aplikacyjne i infrastrukturalne co 15s (mechanizm pull).")
+
+    Container(grafana, "Grafana", "Docker Container: grafana/grafana", "Wizualizacja metryk z Prometheusa na interaktywnych dashboardach. Konfiguracja alertow.")
+}
+
+' ===== RELACJE =====
+Rel(user, nginx, "Wysyla zapytania HTTP", "HTTP/80 lub HTTPS/443")
+Rel(nginx, api, "Przekazuje ruch do API", "HTTP / Port 8000")
+
+Rel(api, postgres, "Odczyt/Zapis danych SQL", "asyncpg / TCP 5432")
+Rel(api, redis, "Cache HIT/MISS, Invalidation", "redis-py / TCP 6379")
+
+Rel(prometheus, api, "Odpytuje metryki", "HTTP GET /metrics (pull)")
+Rel(grafana, prometheus, "Pobiera dane do wizualizacji", "PromQL / HTTP")
+
+Rel_Back(docker_registry, api, "Sklada sie z obrazu zbudowanego przez CI/CD", "ghcr.io")
+
+@enduml

@@ -1,0 +1,63 @@
+@startuml Sequence_Diagram_TaskFlow_CreateTask
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequence {
+    ArrowColor #4A90D9
+    ActorBorderColor #2E8B57
+    LifeLineBorderColor #999999
+    ParticipantBackgroundColor #EEF7FF
+    ParticipantBorderColor #4A90D9
+    NoteBackgroundColor #FFFFCC
+    NoteBorderColor #DAA520
+}
+
+title Diagram Sekwencji #1 - Tworzenie nowego zadania (POST /api/v1/tasks/)
+
+actor "Uzytkownik\n(Przegladarka)" as user
+participant "Nginx\nProxy" as nginx
+participant "FastAPI\nBackend API" as api
+participant "Pydantic\n(Walidacja)" as pydantic
+database "PostgreSQL\n(Baza danych)" as postgres
+database "Redis\n(Cache)" as redis
+
+== Krok 1: Wyslanie zadania ==
+user -> nginx : POST /api/v1/tasks/\nBody: {title, description, priority}
+nginx -> api : Przekazanie HTTP (port 8000)
+
+== Krok 2: Walidacja danych wejsciowych ==
+api -> pydantic : Walidacja schematu TaskCreate
+alt Dane niepoprawne (brak tytulu, zly priorytet)
+    pydantic --> api : ValidationError
+    api --> nginx : HTTP 422 Unprocessable Entity\n{detail: bledy walidacji}
+    nginx --> user : HTTP 422 + JSON z bledem
+else Dane poprawne
+    pydantic --> api : Zwalidowany obiekt TaskCreate
+end
+
+== Krok 3: Zapis do bazy danych ==
+api -> postgres : INSERT INTO tasks\n(title, description, priority, status='todo')\nRETURNING id, created_at, ...
+postgres --> api : Nowy rekord zadania (id=42, ...)
+
+note over postgres
+    SQLAlchemy async session.
+    Commit() zapisuje tranzakcje.
+end note
+
+== Krok 4: Inwalidacja cache ==
+api -> redis : DEL "tasks:list:*"\n(usuniecie wszystkich kluczy listy)
+redis --> api : OK (klucze usuniete)
+
+note over redis
+    Wzorzec Cache-Aside:
+    Zapis do bazy ZAWSZE
+    wymaga usuniecia listy z cache,
+    aby nastepny GET pobral
+    swiezsze dane z PostgreSQL.
+end note
+
+== Krok 5: Odpowiedz ==
+api -> api : Serializacja rekordu\ndo schematu TaskResponse
+api --> nginx : HTTP 201 Created\n{id:42, title:..., status:"todo", priority:...}
+nginx --> user : HTTP 201 Created + JSON
+
+@enduml

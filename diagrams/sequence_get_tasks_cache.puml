@@ -1,0 +1,72 @@
+@startuml Sequence_Diagram_TaskFlow_GetTasks
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequence {
+    ArrowColor #4A90D9
+    ActorBorderColor #2E8B57
+    LifeLineBorderColor #999999
+    ParticipantBackgroundColor #EEF7FF
+    ParticipantBorderColor #4A90D9
+    NoteBackgroundColor #FFFFCC
+    NoteBorderColor #DAA520
+}
+
+title Diagram Sekwencji #2 - Pobieranie listy zadan (GET /api/v1/tasks/) ze wzorcem Cache-Aside
+
+actor "Uzytkownik\n(Przegladarka)" as user
+participant "Nginx\nProxy" as nginx
+participant "FastAPI\nBackend API" as api
+database "Redis\n(Cache)" as redis
+database "PostgreSQL\n(Baza danych)" as postgres
+
+== Krok 1: Zapytanie HTTP ==
+user -> nginx : GET /api/v1/tasks/?page=1&status=todo
+nginx -> api : Przekazanie HTTP (port 8000)
+
+== Krok 2: Sprawdzenie Cache (Cache Lookup) ==
+api -> redis : GET "tasks:list:page=1:status=todo"
+
+alt CACHE HIT (dane sa w cache)
+    redis --> api : Serializowany JSON listy zadan (TTL wygasa za N sekund)
+
+    note over redis, api
+        Cache HIT:
+        Odpowiedz z Redis < 5ms.
+        PostgreSQL nie zostal odpytany.
+        Oszczednosc zasobow bazy danych.
+    end note
+
+    api --> nginx : HTTP 200 OK + JSON (z cache)
+    nginx --> user : HTTP 200 OK\n{tasks:[...], total:N, page:1}
+
+else CACHE MISS (brak danych w cache)
+    redis --> api : nil (klucz nie istnieje lub wygasl)
+
+    note over redis
+        Cache MISS:
+        Klucz nie istnieje lub TTL=0.
+        Wymagane odpytanie bazy.
+    end note
+
+    == Krok 3: Pobranie danych z bazy ==
+    api -> postgres : SELECT * FROM tasks\nWHERE status='todo' AND is_deleted=false\nORDER BY created_at DESC\nLIMIT 20 OFFSET 0
+    postgres --> api : Lista rekordow zadan (raw SQL result)
+
+    == Krok 4: Zapisanie wynikow do cache ==
+    api -> redis : SETEX "tasks:list:page=1:status=todo"\n<JSON listy> TTL=60s
+    redis --> api : OK
+
+    note over redis
+        Dane zostaja zapisane
+        w cache na 60 sekund.
+        Nastepne identyczne zapytanie
+        bedzie obsluzone z cache.
+    end note
+
+    == Krok 5: Odpowiedz ==
+    api -> api : Budowanie odpowiedzi\n(paginacja, metadane: total, pages)
+    api --> nginx : HTTP 200 OK + JSON (ze swiezej bazy)
+    nginx --> user : HTTP 200 OK\n{tasks:[...], total:N, page:1, pages:M}
+end
+
+@enduml

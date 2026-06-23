@@ -1,0 +1,127 @@
+@startuml Deployment_Diagram_TaskFlow
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam component {
+    BackgroundColor #EEF7FF
+    BorderColor #4A90D9
+}
+skinparam node {
+    BackgroundColor #F0FFF0
+    BorderColor #2E8B57
+}
+skinparam database {
+    BackgroundColor #FFF8E7
+    BorderColor #DAA520
+}
+skinparam arrow {
+    Color #555555
+    FontSize 10
+}
+
+title Diagram Wdrozenia (UML Deployment) - TaskFlow na Minikube / Chmurze
+
+' =============================================
+' SRODOWISKO: LOKAL (macOS + Minikube)
+' =============================================
+node "Stacja robocza dewelopera (macOS)" as devmachine {
+    component [Docker Desktop] as docker_desktop
+    component [Minikube (driver: docker)] as minikube
+    component [kubectl] as kubectl_cli
+    component [Przegladarka internetowa] as browser
+
+    note right of minikube
+        Lokalny klaster K8s
+        symulowany za pomoca
+        jednego wezla Docker
+    end note
+}
+
+' =============================================
+' KLASTER KUBERNETES (NAMESPACE: taskflow)
+' =============================================
+node "Klaster Kubernetes (Namespace: taskflow)" as k8s_cluster {
+
+    ' --- Warstwa Ingress ---
+    node "Ingress Controller (nginx)" as ingress_node {
+        component [Nginx Ingress Controller\n(typ: LoadBalancer)] as ingress
+    }
+
+    ' --- Warstwa Aplikacji ---
+    node "Wezel Worker #1 (K8s Node)" as worker_node {
+
+        component [Pod: nginx (Deployment)\nRepliki: 1] as nginx_pod
+        component [Pod: api (Deployment)\nRepliki: 2-5 (HPA)] as api_pod
+
+        node "Pod: postgres-0 (StatefulSet)" as postgres_pod {
+            database [PostgreSQL 16\n:5432] as pg_db
+        }
+
+        node "Pod: redis-0 (StatefulSet)" as redis_pod {
+            database [Redis 7\n:6379] as redis_db
+        }
+
+        ' --- Monitoring ---
+        component [Pod: prometheus (Deployment)] as prom_pod
+        component [Pod: grafana (Deployment)] as grafana_pod
+    }
+
+    ' --- Uslugi Kubernetes (Services) ---
+    component [Service: nginx-svc\n(NodePort :30080)] as nginx_svc
+    component [Service: api-svc\n(ClusterIP :8000)] as api_svc
+    component [Service: postgres-svc\n(ClusterIP :5432)] as postgres_svc
+    component [Service: redis-svc\n(ClusterIP :6379)] as redis_svc
+
+    ' --- PVC ---
+    database [PVC: postgres-data\n(5Gi)] as postgres_pvc
+    database [PVC: redis-data\n(1Gi)] as redis_pvc
+
+    ' --- Konfiguracja ---
+    component [ConfigMap: taskflow-config] as configmap
+    component [Secret: taskflow-secrets] as secrets
+    component [HPA: api-hpa (2-5 replik)] as hpa
+}
+
+' =============================================
+' GITHUB / CI/CD
+' =============================================
+node "GitHub (Zewnetrzny)" as github {
+    component [Repozytorium kodu (main)] as repo
+    component [GitHub Actions CI/CD] as cicd
+    component [Container Registry (GHCR)] as ghcr
+}
+
+' =============================================
+' RELACJE: UZYTKOWNIK
+' =============================================
+browser --> ingress : "HTTP GET taskflow.local\n(przez minikube tunnel)"
+ingress --> nginx_svc
+nginx_svc --> nginx_pod
+
+nginx_pod --> api_svc : "HTTP /api/v1/..."
+api_svc --> api_pod
+
+api_pod --> postgres_svc
+postgres_svc --> pg_db
+
+api_pod --> redis_svc
+redis_svc --> redis_db
+
+' --- PVC ---
+pg_db ..> postgres_pvc : "Trwale dane"
+redis_db ..> redis_pvc : "Trwale dane"
+
+' --- Monitoring ---
+prom_pod --> api_pod : "HTTP GET /metrics (pull)"
+grafana_pod --> prom_pod : "PromQL"
+
+' --- Konfiguracja ---
+api_pod ..> configmap : "odczyt zmiennych"
+api_pod ..> secrets : "odczyt hasel"
+hpa ..> api_pod : "skaluje repliki\n(prog: 70% CPU)"
+
+' --- CI/CD ---
+repo --> cicd : "push do main"
+cicd --> ghcr : "build + push obrazu"
+ghcr ..> api_pod : "kubectl image pull"
+
+@enduml
