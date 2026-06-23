@@ -1,0 +1,47 @@
+# =======================================================
+# security.yml - Przepływ skanowania bezpieczeństwa (DevSecOps)
+#
+# Automatyczne skanowanie kodu i zależności w poszukiwaniu
+# znanych luk bezpieczeństwa (vulnerabilities).
+# =======================================================
+name: Security Scans
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  trivy-scan:
+    name: Trivy Vulnerability Scanner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Klonowanie repozytorium
+        uses: actions/checkout@v4
+
+      - name: Skanowanie plików repozytorium narzędziem Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+
+  bandit-scan:
+    name: Bandit Python Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Klonowanie repozytorium
+        uses: actions/checkout@v4
+        
+      - name: Konfiguracja Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Instalacja Bandit
+        run: pip install bandit
+        
+      - name: Uruchomienie Bandit na kodzie źródłowym
+        run: bandit -r src/api/ -ll -ii

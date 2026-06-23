@@ -99,15 +99,18 @@ Wdrożono automatyzację procesów w ramach Continuous Integration (CI) oraz Con
 
 ### Proces CI (`ci.yml`):
 1.  Uruchomienie przy każdym zdarzeniu typu `push` oraz `pull_request` do gałęzi `main`.
-2.  Konfiguracja środowiska Python 3.12 z buforowaniem pakietów (cache).
-3.  Instalacja zależności projektu.
-4.  Weryfikacja jakości kodu za pomocą narzędzi `black` (formatowanie) oraz `flake8` (linting).
-5.  Uruchomienie testów jednostkowych za pomocą biblioteki `pytest` wraz z wygenerowaniem raportu pokrycia kodu.
-6.  Weryfikacja poprawności kompilacji i budowania kontenerów Docker.
+2.  Konfiguracja środowiska Python z instalacją zależności.
+3.  Weryfikacja jakości kodu za pomocą narzędzi `black` (formatowanie) oraz `flake8` (linting).
+4.  Uruchomienie testów (w tym złożonych integracyjnych/funkcjonalnych end-to-end) za pomocą biblioteki `pytest` i wygenerowanie raportu pokrycia kodu.
+5.  Weryfikacja poprawności kompilacji i budowania kontenerów Docker.
+
+### Proces Bezpieczeństwa i Walidacji (DevSecOps) (`security.yml`, `k8s-validate.yml`):
+1.  **Trivy**: skanowanie obrazów kontenerów i infrastruktury pod kątem podatności (vulnerabilities).
+2.  **Bandit**: analiza statyczna kodu Pythona ukierunkowana na wykrywanie luk bezpieczeństwa.
+3.  **Kubeconform**: statyczna walidacja poprawności składniowej i logicznej manifestów Kubernetes przed próbą wdrożenia na klaster (Shift-Left).
 
 ### Proces CD (`cd.yml`):
-1.  Uruchomienie automatyczne po pomyślnym zakończeniu etapu CI na gałęzi `main`.
-2.  Zalogowanie do rejestru pakietów GitHub Container Registry (GHCR).
-3.  Zbudowanie produkcyjnych obrazów Docker dla API oraz Nginx.
-4.  Oznaczenie obrazów tagami: `latest` oraz unikalnym identyfikatorem zatwierdzenia SHA (`${{ github.sha }}`).
-5.  Wypchnięcie gotowych obrazów do rejestru GHCR, skąd mogą być natychmiast pobrane przez klaster Kubernetes.
+1.  Zalogowanie do rejestru pakietów GitHub Container Registry (GHCR).
+2.  Zbudowanie produkcyjnych obrazów Docker dla API oraz Nginx.
+3.  Oznaczenie obrazów tagami: `latest` oraz unikalnym identyfikatorem zatwierdzenia SHA (`${{ github.sha }}`).
+4.  Wypchnięcie gotowych obrazów do rejestru GHCR, co zamyka proces dostarczania i czyni aplikację gotową do uruchomienia.

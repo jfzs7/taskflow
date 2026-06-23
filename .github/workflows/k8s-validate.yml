@@ -1,0 +1,30 @@
+# =======================================================
+# k8s-validate.yml - Walidacja manifestów Kubernetes
+#
+# Weryfikacja składni i zgodności plików YAML ze
+# schematami Kubernetes przed wdrożeniem (Shift-Left).
+# =======================================================
+name: Kubernetes Manifests Validation
+
+on:
+  push:
+    paths:
+      - 'k8s/**'
+  pull_request:
+    paths:
+      - 'k8s/**'
+
+jobs:
+  kubeconform:
+    name: Kubeconform Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Klonowanie repozytorium
+        uses: actions/checkout@v4
+
+      - name: Weryfikacja manifestów K8s za pomocą Kubeconform
+        uses: bpicode/github-action-kubeconform@v1
+        with:
+          inputs: 'k8s'
+          summary: true
+          ignore-missing-schemas: true

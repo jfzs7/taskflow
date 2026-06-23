@@ -14,24 +14,24 @@ help: ## Wyświetla listę dostępnych poleceń
 
 # --- Rozwój lokalny ---
 dev: ## Uruchamia serwer deweloperski (bez Dockera)
-	cd src/api && uvicorn main:app --reload --host 0.0.0.0 --port 8000
+	cd src/api && ../../.venv/bin/uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # --- Testy ---
 test: ## Uruchamia testy jednostkowe z pokryciem kodu
-	cd src/api && python3 -m pytest ../../tests/ -v --cov=. --cov-report=term-missing
+	cd src/api && ../../.venv/bin/python3 -m pytest ../../tests/ -v --cov=. --cov-report=term-missing 2>&1 | tee ../../tests/test.txt
 
 test-quick: ## Uruchamia testy bez raportu pokrycia
-	cd src/api && python3 -m pytest ../../tests/ -v
+	cd src/api && ../../.venv/bin/python3 -m pytest ../../tests/ -v 2>&1 | tee ../../tests/test.txt
 
 # --- Jakość kodu ---
 lint: ## Sprawdza jakość kodu (flake8)
-	flake8 src/ tests/ --max-line-length=120 --exclude=__pycache__,venv
+	.venv/bin/flake8 src/ tests/ --max-line-length=120 --exclude=__pycache__,venv,.venv
 
 format: ## Formatuje kod (black)
-	black src/ tests/ --line-length=120
+	.venv/bin/black src/ tests/ --line-length=120
 
 format-check: ## Sprawdza formatowanie kodu bez zmian
-	black src/ tests/ --line-length=120 --check
+	.venv/bin/black src/ tests/ --line-length=120 --check
 
 # --- Docker ---
 docker-build: ## Buduje obrazy Docker

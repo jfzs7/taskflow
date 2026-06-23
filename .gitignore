@@ -38,6 +38,8 @@ ENV/
 htmlcov/
 .pytest_cache/
 .tox/
+tests/test.txt
+*.db
 
 # --- Docker ---
 *.log
@@ -48,3 +50,9 @@ htmlcov/
 # --- System ---
 Thumbs.db
 .DS_Store
+
+# --- Dokumenty ---
+*.doc
+*.docx
+*.pdf
+

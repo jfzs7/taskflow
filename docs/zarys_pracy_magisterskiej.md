@@ -302,14 +302,17 @@ Przedstawiono listę wymagań funkcjonalnych aplikacji:
 - PersistentVolumeClaim dla PostgreSQL i Redis.
 - HPA — automatyczne skalowanie.
 
-### 7.9. Pipeline CI/CD (GitHub Actions)
-- Opis etapów pipeline: lint → test → build → deploy.
-- Konfiguracja workflow dla branchy develop i main.
+### 7.9. Pipeline CI/CD (GitHub Actions) i DevSecOps
+- Przepływ CI (`ci.yml`): linting kodu (Black, Flake8), uruchamianie testów funkcjonalnych, testowe budowanie obrazów.
+- Przepływ CD (`cd.yml`): budowanie obrazów produkcyjnych i publikacja w GitHub Container Registry (GHCR).
+- Przepływ Bezpieczeństwa (`security.yml`): skanowanie podatności obrazów i kodu przy użyciu Trivy i Bandit (DevSecOps).
+- Przepływ K8s (`k8s-validate.yml`): walidacja manifestów Kubernetes narzędziem Kubeconform (Shift-Left).
 
 ### 7.10. Testy
-- Strategia testowania: testy jednostkowe, integracyjne.
-- Pokrycie kodu (code coverage).
-- Izolacja testów (SQLite in-memory, dependency override).
+- Strategia testowania: testy bazowe CRUD oraz złożone testy funkcjonalne (end-to-end) modelujące pełen cykl życia zadania i procesy biznesowe.
+- Narzędzia: `pytest` wraz z asynchronicznym klientem `httpx`.
+- Izolacja testów (SQLite in-memory w testach dla szybkości, automatyczne czyszczenie bazy, dependency override dla sesji BD).
+- Pomiary pokrycia kodu (code coverage) uruchamiane w rurociągach CI.
 
 ---
 

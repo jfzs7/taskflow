@@ -50,6 +50,7 @@ Ciągłe zbieranie informacji o kondycji systemów w czasie rzeczywistym. Kluczo
 
 Aplikacja demonstruje omówione wyżej praktyki za pomocą konkretnych technologii:
 *   **Kultura i Współdzielenie**: Kod źródłowy jest przechowywany w centralnym repozytorium GitHub, które stanowi jedno źródło prawdy dla zespołów.
-*   **Automatyzacja (CI/CD)**: Wykorzystanie potoków GitHub Actions (`ci.yml`, `cd.yml`) do testowania, lintingu i budowania obrazów.
-*   **Infrastruktura jako Kod**: Zdefiniowanie całego środowiska lokalnego za pomocą manifestów `docker-compose.yml` oraz manifestów Kubernetes (`k8s/`).
-*   **Monitoring**: Wbudowane mechanizmy `/health`, `/metrics` (JSON) oraz integracja eksportu `/prometheus` w formacie tekstowym Prometheus.
+*   **Automatyzacja i Jakość (CI/CD/Testing)**: Wykorzystanie potoków GitHub Actions (`ci.yml`, `cd.yml`) do lintingu, budowania obrazów, oraz uruchamiania złożonych testów funkcjonalnych (`pytest`) zapewniających stabilność logiki biznesowej.
+*   **Bezpieczeństwo i Compliance (DevSecOps i Shift-Left)**: Automatyczne skanowanie podatności bezpieczeństwa w kodzie i infrastrukturze za pomocą narzędzi Trivy i Bandit (`security.yml`), a także statyczna walidacja manifestów Kubernetes za pomocą Kubeconform (`k8s-validate.yml`).
+*   **Infrastruktura jako Kod (IaC)**: Zdefiniowanie całego środowiska lokalnego za pomocą manifestów `docker-compose.yml` oraz produkcyjnych manifestów Kubernetes (`k8s/`).
+*   **Monitoring i Obserwowalność**: Wbudowane mechanizmy `/health`, `/metrics` (JSON) oraz integracja eksportu `/prometheus` w formacie tekstowym Prometheus.
