@@ -8,7 +8,7 @@
 
 ## 📋 Opis projektu
 
-**TaskFlow** to mikroserwisowy system zarządzania zadaniami opracowany w ramach pracy magisterskiej pt. *„Opracowanie i implementacja aplikacji konteneryzowanej z wykorzystaniem metodyki DevOps"*.
+**TaskFlow** to mikroserwisowy system zarządzania zadaniami.
 
 Aplikacja demonstruje podejście DevOps na etapie projektowania, wdrażania i zarządzania skonteneryzowaną aplikacją klastrową z wykorzystaniem orkiestratora Kubernetes.
 
@@ -120,10 +120,6 @@ taskflow/
 └── Makefile              # Skróty poleceń
 ```
 
-## 👤 Autor
-
-**Jakub Francuz** — Praca magisterska, 2026
-
 ## 📄 Licencja
 
-Projekt opracowany w celach edukacyjnych (praca magisterska).
+Projekt opracowany w celach edukacyjnych.
