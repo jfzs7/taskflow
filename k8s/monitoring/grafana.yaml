@@ -57,6 +57,11 @@ spec:
             - name: datasource-volume
               mountPath: /etc/grafana/provisioning/datasources/datasource.yaml
               subPath: datasource.yaml
+            - name: dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards/dashboard-provider.yaml
+              subPath: dashboard-provider.yaml
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
           resources:
             limits:
               cpu: "500m"
@@ -68,6 +73,12 @@ spec:
         - name: datasource-volume
           configMap:
             name: grafana-datasources
+        - name: dashboard-provider
+          configMap:
+            name: grafana-dashboard-provider
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
 ---
 apiVersion: v1
 kind: Service
