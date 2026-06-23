@@ -18,32 +18,32 @@ echo ""
 
 # --- Weryfikacja uruchomienia Minikube ---
 if ! minikube status &> /dev/null; then
-    echo "⚠️  Minikube nie jest uruchomiony. Uruchamianie klastra..."
+    echo "[WARN] Minikube nie jest uruchomiony. Uruchamianie klastra..."
     minikube start --driver=docker
 else
-    echo "✅ Minikube działa poprawnie."
+    echo "[OK] Minikube działa poprawnie."
 fi
 
 # --- Włączenie wymaganych dodatków (Addons) ---
 echo ""
-echo "🔌 Konfiguracja dodatków Minikube..."
+echo "[*] Konfiguracja dodatków Minikube..."
 minikube addons enable ingress
 minikube addons enable metrics-server
 
 # --- Konfiguracja Docker-env ---
 echo ""
-echo "🐳 Przełączanie środowiska Docker na Minikube..."
+echo "[*] Przełączanie środowiska Docker na Minikube..."
 # To pozwala budować obrazy bezpośrednio wewnątrz rejestru Minikube
 eval $(minikube docker-env)
 
 # --- Budowanie obrazu aplikacji ---
 echo ""
-echo "🏗️  Budowanie obrazu taskflow-api wewnątrz Minikube..."
+echo "[*] Budowanie obrazu taskflow-api wewnątrz Minikube..."
 docker build -t taskflow-api:latest -f src/api/Dockerfile src/api
 
 # --- Aplikacja manifestów Kubernetes ---
 echo ""
-echo "🚀 Aplikacja manifestów Kubernetes..."
+echo "[*] Aplikacja manifestów Kubernetes..."
 
 # Przestrzeń nazw, konfiguracja i sekrety
 kubectl apply -f k8s/namespace.yaml
@@ -79,7 +79,7 @@ kubectl apply -f k8s/monitoring/grafana.yaml
 
 # --- Monitorowanie wdrożenia ---
 echo ""
-echo "⏳ Oczekiwanie na gotowość wdrożeń..."
+echo "[*] Oczekiwanie na gotowość wdrożeń..."
 kubectl rollout status deployment/api -n taskflow --timeout=120s
 kubectl rollout status deployment/nginx -n taskflow --timeout=120s
 kubectl rollout status deployment/prometheus -n taskflow --timeout=120s
@@ -87,7 +87,7 @@ kubectl rollout status deployment/grafana -n taskflow --timeout=120s
 
 echo ""
 echo "========================================"
-echo "  ✅ Wdrożenie zakończone pomyślnie!"
+echo "  [OK] Wdrożenie zakończone pomyślnie!"
 echo "========================================"
 echo ""
 echo "Aplikacja jest dostępna pod adresem:"
@@ -97,10 +97,10 @@ NODE_PORT=$(kubectl get svc nginx-svc -n taskflow -o jsonpath='{.spec.ports[0].n
 PROM_PORT=$(kubectl get svc prometheus-svc -n taskflow -o jsonpath='{.spec.ports[0].nodePort}')
 GRAFANA_PORT=$(kubectl get svc grafana-svc -n taskflow -o jsonpath='{.spec.ports[0].nodePort}')
 
-echo "  🔗 Interfejs WWW: http://$MINIKUBE_IP:$NODE_PORT"
-echo "  🔗 Dokumentacja API: http://$MINIKUBE_IP:$NODE_PORT/docs"
-echo "  🔗 Serwer Prometheus: http://$MINIKUBE_IP:$PROM_PORT"
-echo "  🔗 Panel Grafana: http://$MINIKUBE_IP:$GRAFANA_PORT"
+echo "  - Interfejs WWW: http://$MINIKUBE_IP:$NODE_PORT"
+echo "  - Dokumentacja API: http://$MINIKUBE_IP:$NODE_PORT/docs"
+echo "  - Serwer Prometheus: http://$MINIKUBE_IP:$PROM_PORT"
+echo "  - Panel Grafana: http://$MINIKUBE_IP:$GRAFANA_PORT"
 echo ""
 echo "Wskazówka: Domyślny użytkownik Grafany to: admin / admin"
 echo ""

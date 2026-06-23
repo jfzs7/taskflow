@@ -54,20 +54,20 @@ async def lifespan(app: FastAPI):
     Startup: Inicjalizacja bazy (tworzenie tabel).
     Shutdown: Zamknięcie połączeń do bazy i Redis.
     """
-    logger.info("🚀 Uruchamianie aplikacji %s v%s (%s)",
+    logger.info("[START] Uruchamianie aplikacji %s v%s (%s)",
                 settings.app_name, settings.app_version, settings.app_env)
 
     # --- Startup ---
     await init_db()
-    logger.info("✅ Baza danych zainicjalizowana")
+    logger.info("[OK] Baza danych zainicjalizowana")
 
     yield  # Aplikacja działa
 
     # --- Shutdown ---
-    logger.info("🔻 Zamykanie aplikacji...")
+    logger.info("[STOP] Zamykanie aplikacji...")
     await close_redis()
     await close_db()
-    logger.info("✅ Połączenia zamknięte. Aplikacja zatrzymana.")
+    logger.info("[OK] Połączenia zamknięte. Aplikacja zatrzymana.")
 
 
 # --- Instancja aplikacji FastAPI ---
