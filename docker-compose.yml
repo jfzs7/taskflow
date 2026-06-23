@@ -1,7 +1,7 @@
 # ============================================
 # docker-compose.yml — Lokalne wdrożenie aplikacji TaskFlow
 #
-# Zdefiniowano cztery serwisy kontenerowe:
+# Są 4 serwisy kontenerowe:
 # 1. api       — Backend FastAPI (Python)
 # 2. postgres  — Baza danych PostgreSQL
 # 3. redis     — Cache Redis
@@ -37,7 +37,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     ports:
-      - "8000:8000"  # Dostęp do API bezpośrednio (dev/debug)
+      - "8000:8000" # Dostęp do API bezpośrednio (dev/debug)
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,12 +62,12 @@ services:
       - POSTGRES_USER=taskflow_user
       - POSTGRES_PASSWORD=taskflow_secret_password
     ports:
-      - "5432:5432"  # Dostęp do bazy z hosta (dev/debug)
+      - "5432:5432" # Dostęp do bazy z hosta (dev/debug)
     volumes:
       # Zamontowano wolumin dla trwałości danych (dane przetrwają restart kontenera)
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U taskflow_user -d taskflow"]
+      test: [ "CMD-SHELL", "pg_isready -U taskflow_user -d taskflow" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -86,11 +86,11 @@ services:
     container_name: taskflow-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"  # Dostęp do Redis z hosta (dev/debug)
+      - "6379:6379" # Dostęp do Redis z hosta (dev/debug)
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -110,7 +110,7 @@ services:
     container_name: taskflow-nginx
     restart: unless-stopped
     ports:
-      - "80:80"  # Główny punkt wejścia aplikacji
+      - "80:80" # Główny punkt wejścia aplikacji
     depends_on:
       api:
         condition: service_healthy

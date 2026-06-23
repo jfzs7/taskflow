@@ -1,7 +1,7 @@
 """
-Funkcjonalne testy integracyjne (End-to-End) dla API TaskFlow.
-Te testy sprawdzają złożone scenariusze biznesowe i przypadki użycia,
-obejmujące wiele zapytań HTTP w jednym ciągu.
+Testy integracyjne End-to-End — scenariusze wieloetapowe.
+W odroznieniu od test_tasks.py, tu testujemy przeplywy biznesowe
+(wiele operacji HTTP w jednym scenariuszu), nie izolowane endpointy.
 """
 
 import pytest
@@ -9,13 +9,8 @@ import pytest
 @pytest.mark.asyncio
 async def test_full_task_lifecycle(client):
     """
-    Scenariusz 1: Pełen cykl życia zadania.
-    Kroki:
-    1. Utworzenie zadania
-    2. Sprawdzenie, czy zostało poprawnie dodane do bazy (GET)
-    3. Zmiana priorytetu i statusu zadania (PATCH)
-    4. Usunięcie zadania (DELETE - soft delete)
-    5. Próba pobrania usuniętego zadania (oczekiwane 404)
+    Pelny cykl zycia zadania: CREATE -> GET -> PATCH -> DELETE -> 404.
+    Jezeli ten test przechodzi, podstawowy przeplyw aplikacji dziala poprawnie.
     """
     # 1. Tworzenie
     create_response = await client.post("/api/v1/tasks/", json={
@@ -58,10 +53,9 @@ async def test_full_task_lifecycle(client):
 @pytest.mark.asyncio
 async def test_filtering_and_pagination_combination(client):
     """
-    Scenariusz 2: Łączenie filtrowania, paginacji i sortowania.
-    Kroki:
-    1. Utworzenie serii zadań z różnymi statusami.
-    2. Pobranie zadań z określonym statusem (todo) na drugiej stronie (page=2, per_page=2).
+    Jednoczesne filtrowanie i paginacja.
+    Tworzy 5 zadan todo i 3 in_progress, potem pyta o strone 2 z filtrem todo.
+    Weryfikuje poprawnosc obliczen paginacji i dzialanie filtra.
     """
     # 1. Przygotowanie danych
     for i in range(5):
@@ -89,11 +83,10 @@ async def test_filtering_and_pagination_combination(client):
 @pytest.mark.asyncio
 async def test_validation_and_error_handling(client):
     """
-    Scenariusz 3: Walidacja danych biznesowych i błędy API.
-    Kroki:
-    1. Próba dodania zadania bez wymaganego tytułu (422)
-    2. Próba aktualizacji nieistniejącego zadania (404)
-    3. Próba ustawienia nieprawidłowego statusu w PATCH
+    Sprawdza ze API zwraca poprawne kody bledow:
+    - 422 przy braku wymaganego pola
+    - 404 przy nieistniejacym zadaniu
+    - 422 przy niepoprawnej wartosci Enum
     """
     # 1. Walidacja wymaganego pola 'title'
     invalid_create = await client.post("/api/v1/tasks/", json={

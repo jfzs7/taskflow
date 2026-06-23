@@ -1,12 +1,10 @@
 """
-Moduł główny aplikacji TaskFlow.
+Punkt wejscia aplikacji TaskFlow.
 
-Zaimplementowano punkt wejścia aplikacji FastAPI.
-Skonfigurowano middleware CORS, zarejestrowano routery
-oraz zdefiniowano zdarzenia cyklu życia aplikacji
-(inicjalizacja i zamykanie połączeń z bazą danych i Redis).
+Tutaj dzieje sie wszystko przy starcie: middleware, routery, metryki Prometheus
+i zarzadzanie polaczeniami do bazy i Redis przez lifespan context.
 
-Uruchomienie aplikacji:
+Uruchomienie:
     uvicorn main:app --reload --host 0.0.0.0 --port 8000
 """
 
@@ -33,10 +31,8 @@ from routes.health import router as health_router
 from routes.tasks import router as tasks_router
 from services.cache_service import close_redis
 
-# Inicjalizacja konfiguracji
 settings = get_settings()
 
-# Konfiguracja logowania
 logging.basicConfig(
     level=logging.DEBUG if settings.app_debug else logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
@@ -48,46 +44,41 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Zarządzanie cyklem życia aplikacji (Lifespan Events).
+    Startup i shutdown aplikacji w jednym miejscu.
 
-    Obsługa startu i zatrzymania aplikacji.
-    Startup: Inicjalizacja bazy (tworzenie tabel).
-    Shutdown: Zamknięcie połączeń do bazy i Redis.
+    Startup: tworzy tabele w bazie jesli nie istnieja.
+    Shutdown: ladnie zamyka polaczenia do DB i Redis.
     """
     logger.info("[START] Uruchamianie aplikacji %s v%s (%s)",
                 settings.app_name, settings.app_version, settings.app_env)
 
-    # --- Startup ---
     await init_db()
     logger.info("[OK] Baza danych zainicjalizowana")
 
-    yield  # Aplikacja działa
+    yield  # tu dziala aplikacja
 
-    # --- Shutdown ---
     logger.info("[STOP] Zamykanie aplikacji...")
     await close_redis()
     await close_db()
-    logger.info("[OK] Połączenia zamknięte. Aplikacja zatrzymana.")
+    logger.info("[OK] Polaczenia zamkniete. Aplikacja zatrzymana.")
 
 
-# --- Instancja aplikacji FastAPI ---
 app = FastAPI(
     title=settings.app_name,
     description=(
-        "**TaskFlow** — system zarządzania zadaniami.\n\n"
-        "Projekt demonstrujący podejście DevOps: konteneryzację (Docker), "
-        "orkiestrację (Kubernetes), CI/CD (GitHub Actions) oraz chmurę (AWS, Azure, GCP).\n\n"
+        "**TaskFlow** — system zarzadzania zadaniami.\n\n"
+        "Projekt demonstrujacy podejscie DevOps: konteneryzacja (Docker), "
+        "orkiestracja (Kubernetes), CI/CD (GitHub Actions) oraz monitoring (Prometheus + Grafana).\n\n"
         "Autor: Jakub Francuz"
     ),
     version=settings.app_version,
     lifespan=lifespan,
-    docs_url="/docs",         # Swagger UI
-    redoc_url="/redoc",       # ReDoc
+    docs_url="/docs",
+    redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
 
-# --- Konfiguracja middleware CORS ---
-# Zezwolenie na żądania cross-origin w trybie deweloperskim.
+# Zezwalamy na cross-origin w trybie dev — na produkcji nalezy zawezic origins.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -96,7 +87,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Definicja metryk Prometheus dla ruchu API ---
+# Counter liczy zapytania, Histogram mierzy czas odpowiedzi — pobierane przez Prometheus.
 REQUEST_COUNT = Counter(
     "taskflow_requests_total",
     "Calkowita liczba zapytan HTTP",
@@ -108,54 +99,43 @@ REQUEST_LATENCY = Histogram(
     ["method", "endpoint"]
 )
 
-# --- Middleware do automatycznego pomiaru ruchu HTTP ---
+
 @app.middleware("http")
 async def prometheus_middleware(request: Request, call_next):
+    """Mierzy czas odpowiedzi i liczy zapytania dla Prometheusa. Pomija pliki statyczne."""
     start_time = time.time()
     endpoint = request.url.path
-    
-    # Pominięcie plików statycznych w zbieraniu metryk
+
     if endpoint.startswith("/static") or endpoint.startswith("/favicon"):
         return await call_next(request)
-        
+
     response = await call_next(request)
-    
-    # Pomiar czasu i zapisanie metryk
+
     duration = time.time() - start_time
     REQUEST_COUNT.labels(
         method=request.method,
         endpoint=endpoint,
         http_status=response.status_code
     ).inc()
-    
     REQUEST_LATENCY.labels(
         method=request.method,
         endpoint=endpoint
     ).observe(duration)
-    
+
     return response
 
-# --- Konfiguracja plików statycznych i szablonów ---
-# Obsługa plików statycznych (CSS, JS)
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Obsługa silnika szablonów Jinja2
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# --- Rejestracja routerów ---
 app.include_router(health_router)
 app.include_router(tasks_router)
 
 
-@app.get("/", response_class=HTMLResponse, tags=["Root"], summary="Strona główna (Panel Użytkownika)")
+@app.get("/", response_class=HTMLResponse, tags=["Root"], summary="Panel uzytkownika")
 async def root(request: Request):
-    """
-    Renderowanie panelu użytkownika aplikacji TaskFlow.
-
-    Zwraca stronę HTML z panelem do zarządzania zadaniami.
-    """
+    """Renderuje glowny panel HTML aplikacji TaskFlow."""
     return templates.TemplateResponse(
         "index.html",
         {"request": request, "app_name": settings.app_name, "version": settings.app_version}
     )
-

@@ -1,9 +1,9 @@
 """
-Moduł połączenia z bazą danych aplikacji TaskFlow.
+Polaczenie z baza danych PostgreSQL.
 
-Skonfigurowano asynchroniczny silnik SQLAlchemy oraz fabrykę sesji.
-Zaimplementowano wzorzec Dependency Injection do wstrzykiwania
-sesji bazodanowej w endpointach FastAPI.
+Uzywamy asynchronicznego SQLAlchemy 2.0 z driverem asyncpg — dzieki temu
+zapytania do bazy nie blokuja serwera podczas oczekiwania na wynik.
+Sesja bazodanowa jest wstrzykiwana przez Dependency Injection FastAPI.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -11,11 +11,10 @@ from sqlalchemy.orm import DeclarativeBase
 
 from config import get_settings
 
-# Inicjalizacja konfiguracji
 settings = get_settings()
 
-# --- Silnik asynchroniczny bazy danych ---
-# echo=True loguje zapytania SQL w trybie debug.
+# Pula polaczen: do 5 aktywnych + 10 dodatkowych przy skokach ruchu.
+# echo=True loguje SQL w trybie debug — wygodne przy lokalnym developmencie.
 engine = create_async_engine(
     settings.database_url,
     echo=settings.app_debug,
@@ -23,8 +22,7 @@ engine = create_async_engine(
     max_overflow=10,
 )
 
-# --- Fabryka sesji asynchronicznych ---
-# expire_on_commit=False zapobiega przedwczesnemu wygasaniu atrybutów modelu.
+# expire_on_commit=False zapobiega bledom przy odczycie atrybutow po commit().
 async_session_factory = async_sessionmaker(
     engine,
     class_=AsyncSession,
@@ -33,17 +31,14 @@ async_session_factory = async_sessionmaker(
 
 
 class Base(DeclarativeBase):
-    """
-    Bazowa klasa modeli SQLAlchemy.
-    """
+    """Klasa bazowa dla modeli SQLAlchemy."""
     pass
 
 
 async def get_db() -> AsyncSession:
     """
-    Generator sesji bazy danych (do Dependency Injection w FastAPI).
-
-    Automatycznie zamyka sesję po zakończeniu żądania HTTP.
+    Generator sesji do Dependency Injection w FastAPI.
+    Sesja jest automatycznie zamykana po zakonczeniu kazdego zapytania HTTP.
     """
     async with async_session_factory() as session:
         try:
@@ -53,17 +48,11 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db():
-    """
-    Inicjalizacja schematu bazy danych.
-
-    Tworzy tabele w bazie, jeśli jeszcze nie istnieją.
-    """
+    """Tworzy tabele w bazie przy starcie aplikacji (jesli jeszcze nie istnieja)."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
 async def close_db():
-    """
-    Zamknięcie połączenia z bazą danych (zwolnienie puli).
-    """
+    """Zwalnia pule polaczen przy zamknieciu aplikacji."""
     await engine.dispose()

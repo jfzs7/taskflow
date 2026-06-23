@@ -1,46 +1,59 @@
 @startuml C4_Container_Diagram_TaskFlow
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+
+skinparam rectangle {
+    BackgroundColor #D6E8FF
+    BorderColor #4A90D9
+    BorderThickness 2
+}
+skinparam database {
+    BackgroundColor #FFF3CD
+    BorderColor #DAA520
+}
+skinparam actor {
+    BackgroundColor #D4EDDA
+    BorderColor #2E8B57
+}
+skinparam ArrowColor #444444
+skinparam NoteBorderColor #AAAAAA
+skinparam NoteBackgroundColor #FFFFF0
 
 title Diagram Kontenerow (C4 Level 2) - System TaskFlow
 
-LAYOUT_WITH_LEGEND()
+actor "Uzytkownik\n(Przegladarka)" as user
+rectangle "GitHub GHCR\n[Zewnetrzny rejestr obrazow]" as ghcr
 
-' ===== OSOBY / AKTORZY =====
-Person(user, "Uzytkownik", "Korzysta z aplikacji przez przegladarke internetowa.")
+package "System TaskFlow (Kubernetes / Docker Compose)" {
 
-' ===== SYSTEM ZEWNETRZNY =====
-System_Ext(docker_registry, "GitHub Container Registry (GHCR)", "Repozytorium gotowych obrazow kontenerow Docker po procesie CI/CD.")
+    rectangle "Nginx Reverse Proxy\n[nginx:alpine]\nOdbiera ruch HTTP :80\nPrzekazuje ruch do API" as nginx
 
-' ===== GRANICA SYSTEMU: KLASTER KUBERNETES / DOCKER COMPOSE =====
-System_Boundary(taskflow_system, "System TaskFlow (Klaster Kubernetes / Docker Compose)") {
+    rectangle "Backend API\n[Python 3.12 / FastAPI / Uvicorn]\nGlowna logika biznesowa\nCRUD REST API + metryki /metrics" as api
 
-    ' --- Warstwa Ingress / Proxy ---
-    Container(nginx, "Nginx Reverse Proxy", "Docker Container: nginx:alpine", "Odbiera ruch HTTP na porcie 80. Kompresja gzip, logowanie zapytan. Przekazuje ruch do backendu API.")
+    database "PostgreSQL 16\n[StatefulSet K8s + PVC]\nRelacyjna baza danych\nasyncpg / TCP 5432" as postgres
 
-    ' --- Warstwa Aplikacji ---
-    Container(api, "Backend API", "Docker Container: Python 3.12 / FastAPI / Uvicorn", "Glowna logika biznesowa. Obsluza zadania REST API (CRUD). Eksportuje metryki Prometheus pod /metrics.")
+    database "Redis 7\n[StatefulSet K8s + PVC]\nCache in-memory\nCache-Aside TTL=60s / TCP 6379" as redis
 
-    ' --- Warstwa Danych ---
-    ContainerDb(postgres, "Baza Danych", "Docker Container: PostgreSQL 16 / StatefulSet K8s", "Relacyjna baza danych. Trwale przechowuje zadania. PersistentVolumeClaim zapewnia przetrwanie restartu podu.")
+    rectangle "Prometheus\n[prom/prometheus]\nZbiera metryki co 15s (pull)" as prometheus
 
-    ContainerDb(redis, "Pamiec Podreczna (Cache)", "Docker Container: Redis 7 / StatefulSet K8s", "Cache in-memory implementujacy wzorzec Cache-Aside. Przyspiesza odczyty listy zadan. TTL = 60s.")
-
-    ' --- Warstwa Monitoringu ---
-    Container(prometheus, "Prometheus", "Docker Container: prom/prometheus", "Zbiera metryki aplikacyjne i infrastrukturalne co 15s (mechanizm pull).")
-
-    Container(grafana, "Grafana", "Docker Container: grafana/grafana", "Wizualizacja metryk z Prometheusa na interaktywnych dashboardach. Konfiguracja alertow.")
+    rectangle "Grafana\n[grafana/grafana]\nWizualizacja metryk / dashboardy" as grafana
 }
 
-' ===== RELACJE =====
-Rel(user, nginx, "Wysyla zapytania HTTP", "HTTP/80 lub HTTPS/443")
-Rel(nginx, api, "Przekazuje ruch do API", "HTTP / Port 8000")
+user --> nginx : "HTTP :80"
+nginx --> api : "HTTP :8000 (proxy_pass)"
+api --> postgres : "SQL (asyncpg)"
+api --> redis : "Cache GET/SET/DEL"
+prometheus --> api : "GET /metrics (pull)"
+grafana --> prometheus : "PromQL"
+ghcr ..> api : "image pull"
 
-Rel(api, postgres, "Odczyt/Zapis danych SQL", "asyncpg / TCP 5432")
-Rel(api, redis, "Cache HIT/MISS, Invalidation", "redis-py / TCP 6379")
-
-Rel(prometheus, api, "Odpytuje metryki", "HTTP GET /metrics (pull)")
-Rel(grafana, prometheus, "Pobiera dane do wizualizacji", "PromQL / HTTP")
-
-Rel_Back(docker_registry, api, "Sklada sie z obrazu zbudowanego przez CI/CD", "ghcr.io")
+note right of redis
+  Cache-Aside pattern:
+  HIT: odpowiedz z Redis < 5ms
+  MISS: zapytanie do PostgreSQL
+  + zapis do Redis z TTL=60s
+end note
 
 @enduml

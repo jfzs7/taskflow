@@ -1,12 +1,16 @@
 """
-Moduł endpointów CRUD zadań aplikacji TaskFlow.
+Endpointy CRUD dla zadan — serce REST API.
 
-Zaimplementowano pełen zestaw operacji REST API:
-- POST   /api/v1/tasks      — utworzenie nowego zadania
-- GET    /api/v1/tasks      — pobranie listy zadań
-- GET    /api/v1/tasks/{id} — pobranie pojedynczego zadania
-- PATCH  /api/v1/tasks/{id} — aktualizacja zadania
-- DELETE /api/v1/tasks/{id} — usunięcie zadania (soft-delete)
+Kazdy endpoint deleguje logike do TaskService.
+Routes sa odpowiedzialne tylko za HTTP (parametry, kody odpowiedzi),
+a nie za SQL czy cache.
+
+Endpointy:
+    POST   /api/v1/tasks/      — stworz zadanie
+    GET    /api/v1/tasks/      — lista z filtrowaniem i paginacja
+    GET    /api/v1/tasks/{id}  — pobierz jedno zadanie
+    PATCH  /api/v1/tasks/{id}  — czesciowa aktualizacja
+    DELETE /api/v1/tasks/{id}  — soft-delete
 """
 
 from typing import Optional
@@ -26,24 +30,25 @@ router = APIRouter(
 
 
 @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED,
-             summary="Utwórz nowe zadanie")
+             summary="Utworz nowe zadanie")
 async def create_task(task_data: TaskCreate, db: AsyncSession = Depends(get_db)):
-    """Endpoint tworzenia nowego zadania."""
+    """Tworzy nowe zadanie. Zwraca HTTP 201 z pelnym obiektem zadania."""
     service = TaskService(db)
     return await service.create_task(task_data)
 
 
-@router.get("/", response_model=TaskListResponse, summary="Pobierz listę zadań")
+@router.get("/", response_model=TaskListResponse, summary="Pobierz liste zadan")
 async def get_tasks(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     task_status: Optional[Status] = Query(None, alias="status"),
     priority: Optional[Priority] = Query(None),
+    # sort_by walidowany regexem — zapobiega wstrzykiwaniu dowolnych nazw kolumn
     sort_by: str = Query("created_at", pattern="^(created_at|updated_at|title|priority|status)$"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Endpoint pobierania listy zadań z filtrowaniem i paginacją."""
+    """Zwraca liste zadan z opcjonalnym filtrowaniem, sortowaniem i paginacja."""
     service = TaskService(db)
     return await service.get_tasks(page=page, per_page=per_page, status=task_status,
                                    priority=priority, sort_by=sort_by, sort_order=sort_order)
@@ -51,7 +56,7 @@ async def get_tasks(
 
 @router.get("/{task_id}", response_model=TaskResponse, summary="Pobierz zadanie po ID")
 async def get_task(task_id: int, db: AsyncSession = Depends(get_db)):
-    """Endpoint pobierania pojedynczego zadania."""
+    """Zwraca pojedyncze zadanie. HTTP 404 jezeli nie istnieje lub zostalo usuniete."""
     service = TaskService(db)
     task = await service.get_task(task_id)
     if not task:
@@ -61,7 +66,7 @@ async def get_task(task_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.patch("/{task_id}", response_model=TaskResponse, summary="Zaktualizuj zadanie")
 async def update_task(task_id: int, task_data: TaskUpdate, db: AsyncSession = Depends(get_db)):
-    """Endpoint aktualizacji zadania (partial update)."""
+    """Czesciowa aktualizacja zadania (PATCH). Zmieniamy tylko przeslane pola."""
     service = TaskService(db)
     task = await service.update_task(task_id, task_data)
     if not task:
@@ -69,11 +74,11 @@ async def update_task(task_id: int, task_data: TaskUpdate, db: AsyncSession = De
     return task
 
 
-@router.delete("/{task_id}", response_model=MessageResponse, summary="Usuń zadanie")
+@router.delete("/{task_id}", response_model=MessageResponse, summary="Usun zadanie")
 async def delete_task(task_id: int, db: AsyncSession = Depends(get_db)):
-    """Endpoint usuwania zadania (soft-delete)."""
+    """Usuwa zadanie (soft-delete — rekord pozostaje w bazie z flaga is_deleted=True)."""
     service = TaskService(db)
     deleted = await service.delete_task(task_id)
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Zadanie o id={task_id} nie znalezione.")
-    return MessageResponse(message="Zadanie usunięte.", detail=f"Zadanie id={task_id} zarchiwizowane.")
+    return MessageResponse(message="Zadanie usuniete.", detail=f"Zadanie id={task_id} zarchiwizowane.")

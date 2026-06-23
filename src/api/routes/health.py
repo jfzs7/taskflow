@@ -1,12 +1,8 @@
 """
-Moduł endpointów health check i metryk aplikacji TaskFlow.
+Endpointy monitoringu: /health, /metrics, /prometheus.
 
-Zaimplementowano endpointy monitoringu:
-- GET /health  — sprawdzenie stanu zdrowia aplikacji i zależności
-- GET /metrics — pobranie metryk operacyjnych aplikacji
-
-Endpointy te są kluczowe dla orkiestratorów (Kubernetes)
-do określania gotowości (readiness) i żywotności (liveness) podów.
+/health jest uzywany przez Kubernetes liveness/readiness probes.
+/prometheus generuje metryki w formacie tekstowym pobieranym przez Prometheus co 15s.
 """
 
 import time
@@ -24,40 +20,32 @@ from services.task_service import TaskService
 router = APIRouter(tags=["Monitoring"])
 settings = get_settings()
 
-# Zapisanie czasu startu aplikacji do uptime
-APP_START_TIME = time.time()
+APP_START_TIME = time.time()  # zapamietujemy czas startu do obliczania uptime
 
-# --- Definicja wskaźników Prometheus (Gauges) ---
-# Gauges pozwalają na prezentację aktualnego stanu liczbowego zadań w podziale na etykiety (labels)
+# Gauge = aktualna wartosc (moze rosnac i malec), w odroznienieu od Counter (tylko rosnie).
+# Etykiety (labels) pozwalaja filtrowac metryki np. po statusie zadania.
 TASKS_TOTAL = Gauge("taskflow_tasks_total", "Calkowita liczba zadan w systemie")
-TASKS_BY_STATUS = Gauge("taskflow_tasks_by_status", "Liczba zadan w podziale na statusy", ["status"])
-TASKS_BY_PRIORITY = Gauge("taskflow_tasks_by_priority", "Liczba zadan w podziale na priorytety", ["priority"])
-DATABASE_STATUS = Gauge("taskflow_database_status", "Status polaczenia z baza danych (1=OK, 0=brak)")
+TASKS_BY_STATUS = Gauge("taskflow_tasks_by_status", "Liczba zadan wg statusu", ["status"])
+TASKS_BY_PRIORITY = Gauge("taskflow_tasks_by_priority", "Liczba zadan wg priorytetu", ["priority"])
+DATABASE_STATUS = Gauge("taskflow_database_status", "Status polaczenia z baza (1=OK, 0=brak)")
 REDIS_STATUS = Gauge("taskflow_redis_status", "Status polaczenia z Redis (1=OK, 0=brak)")
 
 
 @router.get("/health", response_model=HealthResponse, summary="Health check aplikacji")
 async def health_check(db: AsyncSession = Depends(get_db)):
     """
-    Sprawdzenie stanu zdrowia aplikacji i jej zależności.
-
-    Endpoint wykorzystywany przez:
-    - Kubernetes liveness/readiness probes
-    - Load balancery (Nginx, cloud LB)
-    - Systemy monitoringu (Prometheus, Grafana)
+    Sprawdza czy aplikacja i jej zaleznosci (DB, Redis) odpowiadaja.
+    Uzywany przez Kubernetes do decydowania o restartach podow.
     """
-    # Sprawdzenie połączenia z bazą danych
     db_status = "healthy"
     try:
         await db.execute(text("SELECT 1"))
     except Exception:
         db_status = "unhealthy"
 
-    # Sprawdzenie połączenia z Redis
     redis_healthy = await check_redis_health()
     redis_status = "healthy" if redis_healthy else "unavailable"
 
-    # Określenie ogólnego statusu aplikacji
     overall = "healthy" if db_status == "healthy" else "unhealthy"
 
     return HealthResponse(
@@ -72,12 +60,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 
 @router.get("/metrics", response_model=MetricsResponse, summary="Metryki aplikacji (JSON)")
 async def get_metrics(db: AsyncSession = Depends(get_db)):
-    """
-    Pobranie metryk operacyjnych aplikacji w formacie JSON.
-
-    Zwraca statystyki zadań (liczba wg statusu i priorytetu)
-    oraz czas działania aplikacji (uptime).
-    """
+    """Statystyki zadan i uptime w formacie JSON — wygodna alternatywa dla /prometheus."""
     service = TaskService(db)
     stats = await service.get_task_stats()
 
@@ -89,25 +72,22 @@ async def get_metrics(db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.get("/prometheus", response_class=Response, summary="Metryki aplikacji (Prometheus)")
+@router.get("/prometheus", response_class=Response, summary="Metryki w formacie Prometheus")
 async def prometheus_metrics(db: AsyncSession = Depends(get_db)):
     """
-    Pobranie metryk operacyjnych aplikacji w formacie tekstowym Prometheus.
-
-    Wywoływane przez serwer Prometheus podczas skrobania (scraping).
-    Aktualizuje wskaźniki zadań na bieżąco przed wygenerowaniem danych.
+    Endpoint scrapowany przez Prometheus co 15s (model pull).
+    Aktualizuje Gauge'y przed wygenerowaniem odpowiedzi.
     """
     service = TaskService(db)
     stats = await service.get_task_stats()
 
-    # Aktualizacja wskaźników przed pobraniem najnowszego zrzutu metryk
     TASKS_TOTAL.set(stats["total_tasks"])
     for status_key, val in stats["tasks_by_status"].items():
         TASKS_BY_STATUS.labels(status=status_key).set(val)
     for priority_key, val in stats["tasks_by_priority"].items():
         TASKS_BY_PRIORITY.labels(priority=priority_key).set(val)
 
-    # Aktualizacja statusu bazy danych
+    # Sprawdzamy baze i Redis przy kazdym scrapie — aktualne dane w Grafanie.
     db_val = 1
     try:
         await db.execute(text("SELECT 1"))
@@ -115,10 +95,7 @@ async def prometheus_metrics(db: AsyncSession = Depends(get_db)):
         db_val = 0
     DATABASE_STATUS.set(db_val)
 
-    # Aktualizacja statusu cache Redis
     redis_healthy = await check_redis_health()
-    redis_val = 1 if redis_healthy else 0
-    REDIS_STATUS.set(redis_val)
+    REDIS_STATUS.set(1 if redis_healthy else 0)
 
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
-

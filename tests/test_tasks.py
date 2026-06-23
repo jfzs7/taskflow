@@ -1,5 +1,6 @@
 """
-Testy endpointów CRUD zadań aplikacji TaskFlow.
+Testy CRUD zadan (POST/GET/PATCH/DELETE) przez HTTP.
+Kazdy test dziala na czystej bazie SQLite — patrz conftest.py.
 """
 
 import pytest

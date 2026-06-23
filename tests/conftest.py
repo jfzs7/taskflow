@@ -1,8 +1,12 @@
 """
-Moduł konfiguracyjny testów (conftest.py) aplikacji TaskFlow.
+Konfiguracja testow (fixtures) dla pytest.
 
-Fixtures pytest do testowania endpointów API
-z użyciem bazy danych SQLite w pamięci (zamiast PostgreSQL).
+Zamiast PostgreSQL uzywamy SQLite in-memory — szybsze, izolowane, bez zewnetrznego serwera.
+Mechanizm: app.dependency_overrides[get_db] podmienia zaleznosc FastAPI — endpointy
+dostaja sesje SQLite zamiast PostgreSQL, nie wiedzac o tym.
+
+Redis jest wylaczony w testach — cache_service zwroci None przy braku polaczenia
+i aplikacja dziala w trybie bez cache (graceful degradation).
 """
 
 import asyncio
@@ -15,15 +19,13 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-# Dodanie ścieżki src/api do sys.path do importów
+# Dodajemy src/api do sys.path zeby importy dzialaly bez instalowania pakietu
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src", "api"))
 
 from database import Base, get_db  # noqa: E402
 from main import app  # noqa: E402
 
-# --- Konfiguracja testowej bazy danych (SQLite in-memory) ---
-# Użycie SQLite zamiast PostgreSQL w testach w celu uproszczenia
-# i przyspieszenia wykonywania testów.
+# SQLite in-memory — oddzielny plik per sesja testow (nie :memory:, bo wspoldzelony engine)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test_taskflow.db"
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
@@ -34,7 +36,7 @@ test_session_factory = async_sessionmaker(
 
 @pytest.fixture(scope="session")
 def event_loop():
-    """Utworzenie pętli zdarzeń asyncio dla całej sesji testów."""
+    """Jedna petla zdarzen asyncio dla calej sesji testow."""
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
@@ -43,10 +45,8 @@ def event_loop():
 @pytest_asyncio.fixture(autouse=True)
 async def setup_database():
     """
-    Inicjalizacja czystej bazy danych przed każdym testem.
-
-    Tworzy wszystkie tabele przed testem i usuwa je po teście,
-    co zapewnia pełną izolację między testami.
+    Tworzy tabele przed kazdym testem i usuwa je po tесcie.
+    Dzieki temu kazdy test startuje z czystym stanem — kolejnosc nie ma znaczenia.
     """
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -57,7 +57,7 @@ async def setup_database():
 
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Utworzenie sesji bazodanowej dla pojedynczego testu."""
+    """Sesja bazodanowa dla jednego testu."""
     async with test_session_factory() as session:
         yield session
 
@@ -65,12 +65,10 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """
-    Utworzenie klienta HTTP do testowania endpointów API.
-
-    Zależność get_db zostaje nadpisana, aby testy korzystały
-    z testowej bazy danych (SQLite) zamiast produkcyjnej.
+    Klient HTTP do testowania endpointow API.
+    Nadpisuje get_db tak, zeby API uzywalo SQLite zamiast PostgreSQL.
+    ASGITransport — nie uruchamia prawdziwego serwera, dziala in-process.
     """
-
     async def override_get_db():
         yield db_session
 
@@ -82,4 +80,4 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     ) as ac:
         yield ac
 
-    app.dependency_overrides.clear()
+    app.dependency_overrides.clear()  # czyscimy nadpisania po tescie

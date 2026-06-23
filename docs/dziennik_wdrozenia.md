@@ -60,9 +60,10 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 | Plik | Opis |
 |------|------|
 | `tests/__init__.py` | Plik inicjalizacyjny pakietu testów. |
-| `tests/conftest.py` | Fixtures pytest — konfiguracja testowa. Tworzy bazę SQLite in-memory, nadpisuje zależność `get_db` i dostarcza klienta HTTP (httpx) do testów endpointów. |
-| `tests/test_tasks.py` | 12 testów CRUD zadań. Pokrywają tworzenie, odczyt, aktualizację, usuwanie, walidację, filtrowanie po statusie i paginację. |
-| `tests/test_health.py` | Testy endpointów monitoringu. Sprawdzają odpowiedź `/` (HTML z TaskFlow) i `/health` (status, baza danych, Redis). |
+| `tests/conftest.py` | Fixtures pytest — konfiguracja testowa. Tworzy bazę SQLite in-memory, nadpisuje zależność `get_db` przez `dependency_overrides` i dostarcza klienta HTTP (httpx.AsyncClient z ASGITransport) do testów endpointów. |
+| `tests/test_tasks.py` | 11 testów CRUD zadań. Pokrywają tworzenie, odczyt, aktualizację, usuwanie (soft-delete), walidację pustego tytułu, filtrowanie po statusie i paginację. |
+| `tests/test_functional.py` | 3 testy integracyjne End-to-End (scenariusze biznesowe). Obejmują: pełny cykl życia zadania (CREATE→GET→PATCH→DELETE→404), kombinację filtrowania z paginacją oraz obsługę błędów walidacji (422, 404). |
+| `tests/test_health.py` | Testy endpointów monitoringu. Sprawdzają odpowiedzi `/health/live`, `/health/ready` i `/metrics`. |
 
 ### Skrypty pomocnicze (`scripts/`)
 | Plik | Opis |
@@ -75,14 +76,24 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 |------|------|
 | `docs/zarys_pracy_magisterskiej.md` | Zarys pracy magisterskiej — 9 rozdziałów. Zawiera spis treści, opis każdego podrozdziału z odniesieniami do aplikacji TaskFlow (perspektywa 3. osoby). |
 | `docs/deployment-local.md` | Instrukcja wdrożenia lokalnego (Docker Compose). Krok po kroku: instalacja Dockera, uruchomienie, weryfikacja, polecenia cURL i rozwiązywanie problemów. |
-| `docs/devops-overview.md` | Teoretyczny przegląd metodyki DevOps: kultura organizacyjna, filary modelu CALMS, najważniejsze praktyki inżynieryjne i odniesienie do projektu. |
+| `docs/devops-overview.md` | Teoretyczny przegląd metodyki DevOps: kultura organizacyjna, filary modelu CALMS, najważniejsze praktyki inżynieryjne i odniesienie do projektu (CI/CD, IaC, monitoring, DevSecOps). |
 | `docs/cloud-comparison.md` | Porównanie platform chmurowych (AWS vs Azure vs GCP): orkiestracja Kubernetes, bazy danych, pamięć cache, integracje z narzędziami CI/CD. |
 | `docs/cost-analysis.md` | Analiza kosztów chmurowych i FinOps: koszty utrzymania klastra mikroserwisów, oszczędzanie poprzez autoskalowanie oraz instancje typu Spot. |
-| `docs/dokumentacja_techniczna.md` | Profesjonalna dokumentacja techniczna: opis architektury systemu i oprogramowania, model bazy danych PostgreSQL, specyfikacja endpointów REST API, konfiguracja Kubernetes. |
+| `docs/dokumentacja_techniczna.md` | Profesjonalna dokumentacja techniczna: opis architektury systemu, model bazy danych PostgreSQL, specyfikacja endpointów REST API, konfiguracja Kubernetes, strategia testów, diagramy. |
 | `docs/dokumentacja_uzytkowa.md` | Podręcznik użytkownika (User Manual): wymagania systemowe, instrukcja instalacji, przewodnik po graficznym interfejsie Kanban, obsługa API i sekcja rozwiązywania problemów. |
 | `docs/prezentacja_dzialania.md` | Scenariusz prezentacji działania aplikacji: kolejność poleceń w terminalu, demonstracja interfejsu i metryk, opis architektury dla osób oceniających. |
 | `docs/scenariusze_monitoringu.md` | Praktyczne scenariusze demonstracji monitoringu (Prometheus + Grafana) wraz z instrukcjami wywołania i zapytaniami PromQL. |
+| `docs/scenariusz_prezentacji.md` | Rozbudowany scenariusz prezentacji dla promotora z ludzkim językiem i gotowymi odpowiedziami na pytania. |
 | `docs/dziennik_wdrozenia.md` | Ten plik — dziennik wdrożenia i spis plików. |
+
+### Diagramy architektoniczne (`diagrams/`)
+| Plik | Opis |
+|------|------|
+| `diagrams/c4_container_diagram.puml` | Diagram Kontenerów (C4 Level 2) — wszystkie komponenty, protokoły i relacje. Format PlantUML. |
+| `diagrams/deployment_diagram.puml` | Diagram Wdrożenia UML — pody Kubernetes, Services, PVC, HPA, integracja z GHCR. |
+| `diagrams/sequence_create_task.puml` | Diagram Sekwencji UML — przepływ tworzenia zadania (POST): walidacja Pydantic → INSERT → inwalidacja cache. |
+| `diagrams/sequence_get_tasks_cache.puml` | Diagram Sekwencji UML — wzorzec Cache-Aside (GET): Cache HIT vs Cache MISS z TTL. |
+| `diagrams/README.md` | Instrukcja renderowania diagramów (VS Code, plantuml.com, CLI). |
 
 ### Manifesty Kubernetes (`k8s/`)
 | Plik | Opis |
@@ -117,8 +128,10 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 ### Konfiguracja CI/CD (`.github/workflows/`)
 | Plik | Opis |
 |------|------|
-| `.github/workflows/ci.yml` | Potok Continuous Integration: automatyczne formatowanie kodu (black), statyczna analiza (flake8), testy jednostkowe (pytest) i test budowania obrazów Docker. |
-| `.github/workflows/cd.yml` | Potok Continuous Deployment: automatyczne budowanie i wypychanie gotowych obrazów Docker do rejestru GitHub Container Registry (GHCR). |
+| `.github/workflows/ci.yml` | Potok Continuous Integration: automatyczne formatowanie kodu (black), statyczna analiza (flake8), testy jednostkowe i funkcjonalne (pytest z pokryciem kodu) oraz test budowania obrazów Docker. |
+| `.github/workflows/cd.yml` | Potok Continuous Deployment: automatyczne budowanie i wypychanie gotowych obrazów Docker do rejestru GitHub Container Registry (GHCR) z tagowaniem `:latest` i `:sha`. |
+| `.github/workflows/security.yml` | Potok DevSecOps: skanowanie podatności CVE przez Trivy (pliki repozytorium) oraz statyczna analiza bezpieczeństwa kodu Python przez Bandit (`-ll -ii`). |
+| `.github/workflows/k8s-validate.yml` | Walidacja manifestów Kubernetes: Kubeconform sprawdza zgodność YAML ze schematem K8s API przed deployem (Shift-Left). |
 
 ---
 
@@ -233,12 +246,14 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 ---
 
 ### Krok 11 — CI/CD Pipeline z GitHub Actions (Faza 5)
-**Co:** Skonfigurowano dwa potoki CI/CD za pomocą GitHub Actions:
-- **Continuous Integration (`ci.yml`)**: uruchamiany przy każdym wypchnięciu (push) oraz żądaniu ściągnięcia (pull request) do gałęzi `main`. Odpowiada za sprawdzenie formatowania (`black`), statyczną analizę kodu (`flake8`), uruchomienie testów jednostkowych (`pytest`) z raportem pokrycia kodu oraz weryfikację budowania obrazów Docker dla API i Nginxa.
-- **Continuous Deployment (`cd.yml`)**: uruchamiany automatycznie po udanym scaleniu zmian z gałęzią `main`. Buduje produkcyjne wersje obrazów Docker i automatycznie wypycha je do rejestru pakietów GitHub Container Registry (GHCR), tagując je unikalnym ID commita oraz etykietą `latest`.
+**Co:** Skonfigurowano cztery potoki CI/CD za pomocą GitHub Actions:
+- **Continuous Integration (`ci.yml`)**: uruchamiany przy każdym push i pull request do `main`. Sprawdza formatowanie (`black`), analizę statyczną (`flake8`), uruchamia testy (`pytest`) z raportem pokrycia i weryfikuje budowanie obrazów Docker (`push: false`).
+- **Continuous Deployment (`cd.yml`)**: uruchamiany po scaleniu z `main`. Buduje produkcyjne obrazy i wypycha je do GHCR z tagami `:latest` i `:sha` dla precyzyjnego rollbacku.
+- **Security Scans (`security.yml`)**: skanowanie Trivy (`fs`, `CRITICAL,HIGH`, `ignore-unfixed`) + analiza Bandit (`-ll -ii`) przy każdym push.
+- **K8s Validate (`k8s-validate.yml`)**: Kubeconform waliduje manifesty YAML przy zmianach w `k8s/` — Shift-Left testing.
 
-**Dlaczego:** Automatyzacja testów i budowania obrazów to klucz do wykrywania błędów na wczesnym etapie (shift-left testing). Wypychanie gotowych obrazów do GHCR pozwala na natychmiastowe pobranie ich przez klaster Kubernetes na środowiskach docelowych, bez konieczności lokalnego budowania kodu.
-**Rezultat:** W pełni zautomatyzowane pipeline'y CI/CD zintegrowane z repozytorium GitHub.
+**Dlaczego:** Cztery niezależne pipeline'y realizują podejście DevSecOps: bezpieczeństwo jest wbudowane w proces CI, nie jest etapem na końcu. Tag `:sha` umożliwia precyzyjny rollback do dowolnej wersji historycznej bez pytania o kontekst. Kubeconform wykrywa błędy w manifestach K8s zanim trafią na klaster — tańsze niż debugowanie na żywo.
+**Rezultat:** W pełni zautomatyzowane pipeline'y CI/CD z wbudowanym bezpieczeństwem zintegrowane z repozytorium GitHub.
 
 ---
 
@@ -255,3 +270,31 @@ kolejnych kroków wdrożenia — co wykonano, dlaczego i jaki był tego rezultat
 
 **Dlaczego:** Obserwowalność (Observability) i ciągłe doskonalenie na bazie zebranych danych to końcowe etapy pętli DevOps. Wystawienie wszystkich usług monitoringu i samej aplikacji pod jedną domeną `taskflow.local` i różnymi podkatalogami odzwierciedla profesjonalną konfigurację produkcyjną (unikanie otwierania wielu losowych portów NodePort i ujednolicenie punktów dostępu). Prometheus pozwala na zbieranie dokładnych parametrów działania klastra, a Grafana dostarcza przyjazne pulpity menedżerskie. Teoretyczne dokumenty chmurowe i FinOps spajają wdrożoną aplikację z zakresem i celem pracy magisterskiej.
 **Rezultat:** Projekt TaskFlow jest w pełni ukończony, wdrożony pod jedną wspólną domeną `taskflow.local` za pomocą Ingressa i gotowy do oceny.
+
+---
+
+### Krok 13 — Testy funkcjonalne i wzmocnienie DevSecOps
+**Co:**
+- Dodano `tests/test_functional.py` z 3 testami integracyjnymi End-to-End (scenariusze biznesowe: pełny cykl życia, filtrowanie+paginacja, obsługa błędów).
+- Dodano pipeline `security.yml` — Trivy (scan plików, CRITICAL+HIGH, ignore-unfixed) + Bandit (-ll -ii).
+- Dodano pipeline `k8s-validate.yml` — Kubeconform waliduje manifesty YAML przy zmianach w `k8s/`.
+- Usunięto emotikony ze skryptów i kodu — zastąpiono neutralnymi znacznikami ASCII ([*], [OK], [STOP]).
+- Skonfigurowano `.vscode/settings.json` z `python.analysis.extraPaths` i `plantuml.render: PlantUMLServer`.
+
+**Dlaczego:** Testy E2E pokrywają scenariusze, których testy jednostkowe nie obejmują — przepływy wieloetapowe. DevSecOps wbudowany w CI zapewnia, że każdy commit jest sprawdzany pod kątem bezpieczeństwa. Neutralne znaczniki ASCII poprawiają kompatybilność logów na różnych platformach.
+**Rezultat:** Suite testów rozszerzony do 15+ przypadków testowych, cztery pipeline'y CI/CD.
+
+---
+
+### Krok 14 — Diagramy architektoniczne (PlantUML)
+**Co:** Utworzono katalog `diagrams/` z czterema diagramami PlantUML:
+- `c4_container_diagram.puml` — Diagram Kontenerów (C4 Level 2)
+- `deployment_diagram.puml` — Diagram Wdrożenia UML (Kubernetes)
+- `sequence_create_task.puml` — Diagram Sekwencji: tworzenie zadania
+- `sequence_get_tasks_cache.puml` — Diagram Sekwencji: Cache-Aside (GET)
+- `diagrams/README.md` — instrukcja renderowania (VS Code, plantuml.com, CLI)
+
+Skonfigurowano VS Code (`settings.json`) z `plantuml.render: PlantUMLServer` — diagramy renderowane przez plantuml.com bez lokalnej instalacji Java/graphviz.
+
+**Dlaczego:** Diagramy architektoniczne są wymagane przez promotora do oceny znajomości architektury. Format PlantUML jest tekstowy — diagramy są wersjonowane w Git jak kod.
+**Rezultat:** Cztery diagramy gotowe do prezentacji, z instrukcją renderowania dla recenzenta.
