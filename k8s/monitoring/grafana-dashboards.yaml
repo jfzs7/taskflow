@@ -115,7 +115,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(rate(http_requests_total[1m])) by (method, status)",
+              "expr": "sum(rate(taskflow_requests_total[1m])) by (method, http_status)",
               "refId": "A"
             }
           ],
@@ -204,7 +204,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(rate(http_request_duration_seconds_sum[1m])) / sum(rate(http_request_duration_seconds_count[1m]))",
+              "expr": "sum(rate(taskflow_request_latency_seconds_sum[1m])) / sum(rate(taskflow_request_latency_seconds_count[1m]))",
               "refId": "A"
             }
           ],
