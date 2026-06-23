@@ -14,6 +14,7 @@ data:
     datasources:
       - name: Prometheus
         type: prometheus
+        uid: prometheus
         access: proxy
         url: http://prometheus-svc:9090/prometheus # DNS serwisu Prometheus w klastrze
         isDefault: true
