@@ -15,7 +15,7 @@ data:
       - name: Prometheus
         type: prometheus
         access: proxy
-        url: http://prometheus-svc:9090 # DNS serwisu Prometheus w klastrze
+        url: http://prometheus-svc:9090/prometheus # DNS serwisu Prometheus w klastrze
         isDefault: true
         editable: true
 ---
