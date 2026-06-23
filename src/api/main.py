@@ -13,12 +13,18 @@ Uruchomienie aplikacji:
 import time
 import logging
 from contextlib import asynccontextmanager
+# pyrefly: ignore [missing-import]
 from prometheus_client import Counter, Histogram
 
+# pyrefly: ignore [missing-import]
 from fastapi import FastAPI, Request
+# pyrefly: ignore [missing-import]
 from fastapi.middleware.cors import CORSMiddleware
+# pyrefly: ignore [missing-import]
 from fastapi.staticfiles import StaticFiles
+# pyrefly: ignore [missing-import]
 from fastapi.templating import Jinja2Templates
+# pyrefly: ignore [missing-import]
 from fastapi.responses import HTMLResponse
 
 from config import get_settings
